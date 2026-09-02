@@ -1442,21 +1442,30 @@ export function SafeSpendApp() {
                     {/* Compact Card Group Previews */}
                     <div className="space-y-2.5">
                       {factualBankCardGroups.map((group) => (
-                        <div key={group.bankName} className={cn("rounded-2xl p-3.5 space-y-2 shadow-xs", group.colorTheme)}>
-                          <div className="flex justify-between items-center text-xs">
-                            <span className="font-extrabold tracking-wide">{group.bankName}</span>
-                            <span className="text-[10px] font-mono opacity-80">Limit: {formatInr(group.sharedLimit)}</span>
-                          </div>
-                          <div className="flex justify-between items-end border-t border-white/20 pt-2 text-xs">
-                            <div>
-                              <p className="text-[9px] uppercase font-bold opacity-75">{group.cards.length} Cards Shared</p>
-                              <p className="text-[11px] font-bold truncate max-w-[140px]">
-                                {group.cards.map(c => c.brandTag).join(" · ")}
-                              </p>
+                        <div
+                          key={group.bankName}
+                          style={{ backgroundImage: `url(${group.cardImage})` }}
+                          className="relative rounded-2xl overflow-hidden shadow-xs bg-cover bg-center border border-white/20 p-3.5 space-y-2 text-white"
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/60 to-black/30 backdrop-brightness-95" />
+                          <div className="relative z-10 space-y-2">
+                            <div className="flex justify-between items-center text-xs">
+                              <span className="font-black tracking-wide uppercase drop-shadow-xs">{group.bankName}</span>
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-black tracking-wider uppercase shadow-xs border border-emerald-300/40">
+                                <span className="size-1.5 rounded-full bg-white animate-pulse" /> Active
+                              </span>
                             </div>
-                            <div className="text-right">
-                              <p className="text-[9px] uppercase font-bold opacity-75">Group Outstanding</p>
-                              <p className="font-mono font-black">{formatInr(group.totalOutstandingSpend)}</p>
+                            <div className="flex justify-between items-end border-t border-white/20 pt-2 text-xs">
+                              <div>
+                                <p className="text-[9px] uppercase font-bold opacity-80">{group.cards.length} Cards Shared</p>
+                                <p className="text-[11px] font-bold truncate max-w-[140px] opacity-90">
+                                  {group.cards.map(c => c.brandTag).join(" · ")}
+                                </p>
+                              </div>
+                              <div className="text-right">
+                                <p className="text-[9px] uppercase font-bold opacity-80">Outstanding</p>
+                                <p className="font-mono font-black">{formatInr(group.totalOutstandingSpend)}</p>
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1513,7 +1522,7 @@ export function SafeSpendApp() {
           {/* TAB 2: OVERVIEW & PLAN */}
           {activeTab === "plan" && (
             <div className="space-y-6">
-              {/* Income Sources Management Card (WITH EDIT & DELETE OPTIONS FOR EVERY INCOME SOURCE) */}
+              {/* Income Sources Management Card */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
@@ -1733,7 +1742,7 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT */}
+          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (REALISTIC AI MOCKUP BACKGROUNDS + HIGH CONTRAST ACTIVE TAG) */}
           {activeTab === "cards" && (
             <div className="space-y-6">
               {/* Grand Summary Badge Header */}
@@ -1771,29 +1780,62 @@ export function SafeSpendApp() {
                 </div>
               </div>
 
-              {/* FACTUAL BANK CARD GROUPS DISPLAY */}
+              {/* FACTUAL BANK CARD GROUPS DISPLAY (WITH REALISTIC MOCKUP IMAGES & EMV CHIP & CRISP ACTIVE TAG) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {factualBankCardGroups.map((group) => (
                   <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
                     <div className="space-y-3">
-                      {/* Visual Bank Group Header Card */}
-                      <div className={cn("rounded-2xl p-5 space-y-4 shadow-md relative overflow-hidden", group.colorTheme)}>
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-black tracking-wider uppercase">{group.bankName}</span>
-                          <Chip color="success" size="sm" variant="soft">Active Group</Chip>
-                        </div>
-                        <div className="space-y-1">
-                          <p className="text-[10px] uppercase font-bold opacity-75">Shared Credit Limit</p>
-                          <p className="font-mono text-2xl font-black">{formatInr(group.sharedLimit)}</p>
-                        </div>
-                        <div className="flex justify-between items-end text-xs border-t border-white/20 pt-2.5">
-                          <div>
-                            <p className="text-[9px] uppercase font-bold opacity-75">Cards in Group</p>
-                            <p className="font-bold">{group.cards.length} Cards Shared</p>
+                      {/* Realistic Visual Credit Card Mockup Header */}
+                      <div
+                        style={{ backgroundImage: `url(${group.cardImage})` }}
+                        className="relative rounded-2xl overflow-hidden shadow-lg h-52 bg-cover bg-center border border-white/30 text-white flex flex-col justify-between p-4 group cursor-pointer transition-all hover:scale-[1.01]"
+                      >
+                        {/* High-contrast dark gradient overlay for text readability */}
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/50 to-black/30 backdrop-brightness-95 p-4 flex flex-col justify-between">
+                          {/* Card Top Row: Chip, Contactless & CRISP ACTIVE TAG */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              {/* Realistic EMV Chip Graphic */}
+                              <div className="w-9 h-7 rounded-md bg-gradient-to-tr from-amber-300 via-yellow-400 to-amber-200 border border-amber-500/60 p-1 flex items-center justify-center shadow-xs">
+                                <div className="w-full h-full border border-amber-600/40 rounded-[2px] grid grid-cols-2 gap-0.5 opacity-80" />
+                              </div>
+                              {/* Contactless Icon */}
+                              <div className="text-white/90">
+                                <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <path d="M8.5 14.5a5 5 0 0 1 0-5" />
+                                  <path d="M12 17a8.5 8.5 0 0 0 0-10" />
+                                  <path d="M15.5 19.5a12 12 0 0 0 0-15" />
+                                </svg>
+                              </div>
+                            </div>
+
+                            {/* CRISP HIGH-CONTRAST ACTIVE TAG */}
+                            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black tracking-wider uppercase shadow-md border border-emerald-300/60">
+                              <span className="size-1.5 rounded-full bg-white animate-pulse" /> Active Group
+                            </span>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[9px] uppercase font-bold opacity-75">Group Outstanding</p>
-                            <p className="font-mono font-black text-sm">{formatInr(group.totalOutstandingSpend)}</p>
+
+                          {/* Card Middle: Bank Group Title & Limit */}
+                          <div className="space-y-0.5">
+                            <span className="font-black tracking-wider text-xs uppercase text-white/90 drop-shadow-sm">{group.bankName}</span>
+                            <div className="flex items-baseline gap-2">
+                              <span className="text-[10px] font-bold text-slate-300 uppercase">Shared Limit:</span>
+                              <span className="font-mono text-2xl font-black text-white drop-shadow-sm">{formatInr(group.sharedLimit)}</span>
+                            </div>
+                          </div>
+
+                          {/* Card Bottom Row: Group Outstanding */}
+                          <div className="flex justify-between items-end text-xs border-t border-white/20 pt-2">
+                            <div>
+                              <p className="text-[9px] uppercase font-bold text-slate-300">{group.cards.length} Cards Shared</p>
+                              <p className="text-[11px] font-extrabold text-white truncate max-w-[150px]">
+                                {group.cards.map(c => c.brandTag.split(" ")[0]).join(" · ")}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] uppercase font-bold text-amber-300">Group Outstanding</p>
+                              <p className="font-mono font-black text-sm text-white">{formatInr(group.totalOutstandingSpend)}</p>
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -1802,7 +1844,7 @@ export function SafeSpendApp() {
                       <div className="space-y-2 pt-1">
                         <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">Individual Card Spends</p>
                         {group.cards.map((card) => (
-                          <div key={card.name} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60">
+                          <div key={card.name} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition-all">
                             <div>
                               <p className="font-extrabold text-slate-900 text-xs">{card.name}</p>
                               <p className="text-[10px] text-slate-400 font-semibold">{card.brandTag} · since {card.sinceDate}</p>

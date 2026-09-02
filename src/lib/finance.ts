@@ -246,6 +246,7 @@ export type FactualBankCardGroup = {
   sharedLimit: number;
   totalOutstandingSpend: number;
   colorTheme: string;
+  cardImage: string;
   cards: Array<{
     name: string;
     brandTag: string;
@@ -260,6 +261,7 @@ export const factualBankCardGroups: FactualBankCardGroup[] = [
     sharedLimit: 15000,
     totalOutstandingSpend: 10345.60,
     colorTheme: "bg-[#800020] text-white",
+    cardImage: "/images/axis_card.jpg",
     cards: [
       { name: "Axis Bank Indian Oil", brandTag: "Indian Oil Fuel (....7380)", spendAmount: 5310.40, sinceDate: "20 Aug" },
       { name: "Axis Bank Flipkart", brandTag: "Flipkart Co-Branded (....9691)", spendAmount: 4688.00, sinceDate: "14 Aug" },
@@ -271,6 +273,7 @@ export const factualBankCardGroups: FactualBankCardGroup[] = [
     sharedLimit: 40000,
     totalOutstandingSpend: 10601.11,
     colorTheme: "bg-[#0A2540] text-white",
+    cardImage: "/images/hdfc_card.jpg",
     cards: [
       { name: "HDFC PhonePe / PayZapp", brandTag: "PhonePe Cashbacks (....8020)", spendAmount: 10601.11, sinceDate: "12 Aug" },
       { name: "Tata Neu HDFC Card", brandTag: "Tata Neu Plus (....7192)", spendAmount: 0.00, sinceDate: "11 Aug" },
@@ -282,6 +285,7 @@ export const factualBankCardGroups: FactualBankCardGroup[] = [
     sharedLimit: 27000,
     totalOutstandingSpend: 1640.00,
     colorTheme: "bg-[#0077B6] text-white",
+    cardImage: "/images/uni_card.jpg",
     cards: [
       { name: "Uni X Gold (YES Bank)", brandTag: "Uni Gold Edition (....0976)", spendAmount: 1640.00, sinceDate: "12 Aug" },
       { name: "Uni RuPay Card (YES Bank)", brandTag: "Uni RuPay UPI (....5456)", spendAmount: 0.00, sinceDate: "12 Aug" },
