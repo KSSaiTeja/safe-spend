@@ -23,7 +23,7 @@ import {
   Card,
   Chip,
   Input,
-  Progress,
+  ProgressBar,
   Switch,
 } from "@heroui/react";
 
@@ -913,7 +913,7 @@ export function SafeSpendApp() {
                       {formatInr(totalDebtsPaidSoFar)} / {formatInr(totalDebtsOriginalTotal)}
                     </span>
                   </div>
-                  <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2" />
+                  <ProgressBar value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2" />
                 </div>
               </div>
 
@@ -1270,7 +1270,7 @@ export function SafeSpendApp() {
                         {formatInr(variableSpent)} / {formatInr(variableBudget)}
                       </span>
                     </div>
-                    <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
+                    <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
                   </div>
 
                   <div className="grid grid-cols-3 gap-2 text-center text-xs">
@@ -1307,7 +1307,7 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "all" ? "solid" : "ghost"}
+                      variant={spendListFilter === "all" ? "primary" : "ghost"}
                       className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
                       onPress={() => setSpendListFilter("all")}
                     >
@@ -1316,7 +1316,7 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "today" ? "solid" : "ghost"}
+                      variant={spendListFilter === "today" ? "primary" : "ghost"}
                       className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
                       onPress={() => setSpendListFilter("today")}
                     >
@@ -1325,7 +1325,7 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "yesterday" ? "solid" : "ghost"}
+                      variant={spendListFilter === "yesterday" ? "primary" : "ghost"}
                       className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
                       onPress={() => setSpendListFilter("yesterday")}
                     >
@@ -1334,7 +1334,7 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "custom" ? "solid" : "ghost"}
+                      variant={spendListFilter === "custom" ? "primary" : "ghost"}
                       className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
                       onPress={() => {
                         setSpendListFilter("custom");
@@ -1521,7 +1521,7 @@ export function SafeSpendApp() {
                             <span>Limit Utilized</span>
                             <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
                           </div>
-                          <Progress value={cardStatus.utilization * 100} className="h-2" />
+                          <ProgressBar value={cardStatus.utilization * 100} className="h-2" />
                         </div>
                         <div className="flex justify-between text-xs font-medium text-slate-500">
                           <span>Used: {formatInr(cardStatus.used)}</span>
