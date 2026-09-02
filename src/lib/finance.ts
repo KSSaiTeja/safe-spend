@@ -228,18 +228,66 @@ export const octoberSeedData: MonthlyBudgetData = {
     { id: "electricity", name: "Electricity", amount: 500, kind: "fixed" },
     { id: "misc", name: "Misc", amount: 3000, kind: "variable" },
   ],
-  creditCardBill: 20000,
+  creditCardBill: 22587,
   lazyPay: 0,
   repayments: [
     { id: "daddy", name: "Daddy", amount: 30000, required: true },
     { id: "venkat", name: "Venkat", amount: 50000, required: false },
   ],
   cards: [
-    { name: "HDFC", limit: 40000, available: 25000 },
-    { name: "Axis", limit: 15000, available: 7500 },
-    { name: "YES Bank", limit: 27000, available: 25061 },
+    { name: "HDFC Bank (3 Cards)", limit: 40000, available: 29399 },
+    { name: "Axis Bank (3 Cards)", limit: 15000, available: 9965 },
+    { name: "YES Bank Uni (2 Cards)", limit: 27000, available: 25360 },
   ],
 };
+
+export type FactualBankCardGroup = {
+  bankName: string;
+  sharedLimit: number;
+  totalOutstandingSpend: number;
+  colorTheme: string;
+  cards: Array<{
+    name: string;
+    brandTag: string;
+    spendAmount: number;
+    sinceDate: string;
+  }>;
+};
+
+export const factualBankCardGroups: FactualBankCardGroup[] = [
+  {
+    bankName: "Axis Bank Cards Group",
+    sharedLimit: 15000,
+    totalOutstandingSpend: 5035.20,
+    colorTheme: "bg-[#800020] text-white",
+    cards: [
+      { name: "Axis Bank My Zone", brandTag: "My Zone", spendAmount: 347.20, sinceDate: "15 Aug" },
+      { name: "Axis Bank Flipkart", brandTag: "Flipkart Co-Branded", spendAmount: 4688.00, sinceDate: "14 Aug" },
+      { name: "Axis Bank Indian Oil", brandTag: "Indian Oil Fuel", spendAmount: 0.00, sinceDate: "14 Aug" },
+    ],
+  },
+  {
+    bankName: "HDFC Bank Cards Group",
+    sharedLimit: 40000,
+    totalOutstandingSpend: 10601.11,
+    colorTheme: "bg-[#0A2540] text-white",
+    cards: [
+      { name: "Tata Neu HDFC Card", brandTag: "Tata Neu Rewards", spendAmount: 10601.11, sinceDate: "12 Aug" },
+      { name: "HDFC PhonePe / PayZapp", brandTag: "PhonePe Cashbacks", spendAmount: 0.00, sinceDate: "12 Aug" },
+      { name: "HDFC RuPay Credit Card", brandTag: "UPI RuPay Link", spendAmount: 0.00, sinceDate: "12 Aug" },
+    ],
+  },
+  {
+    bankName: "YES Bank (Uni Cards Group)",
+    sharedLimit: 27000,
+    totalOutstandingSpend: 1640.00,
+    colorTheme: "bg-[#0077B6] text-white",
+    cards: [
+      { name: "Uni X Gold (YES Bank)", brandTag: "Uni Gold Edition", spendAmount: 1640.00, sinceDate: "12 Aug" },
+      { name: "Uni RuPay Card (YES Bank)", brandTag: "Uni RuPay UPI", spendAmount: 0.00, sinceDate: "12 Aug" },
+    ],
+  },
+];
 
 export function sumAmounts<T extends { amount: number }>(items: T[]): number {
   return items.reduce((total, item) => total + item.amount, 0);

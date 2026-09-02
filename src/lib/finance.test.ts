@@ -18,10 +18,10 @@ describe("October Safe Spend logic", () => {
     expect(plan.outgoingEmisTotal).toBe(29724);
     expect(plan.ownEmisTotal).toBe(29724);
     expect(plan.nonEmiExpensesTotal).toBe(18000);
-    expect(plan.coreObligationsBeforeVenkat).toBe(97724);
-    expect(plan.maxVenkatPaymentWithoutBuffer).toBe(51276);
-    expect(plan.recommendedVenkatPayment).toBe(46276);
-    expect(plan.deferredVenkatBalance).toBe(3724);
+    expect(plan.coreObligationsBeforeVenkat).toBe(100311);
+    expect(plan.maxVenkatPaymentWithoutBuffer).toBe(48689);
+    expect(plan.recommendedVenkatPayment).toBe(43689);
+    expect(plan.deferredVenkatBalance).toBe(6311);
     expect(plan.finalBufferAfterRecommendedPlan).toBe(5000);
   });
 

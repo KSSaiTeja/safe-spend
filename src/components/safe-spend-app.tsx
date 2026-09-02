@@ -59,6 +59,7 @@ import {
   addMonthsToDate,
   calculateMonthlyPlan,
   calculateSafeSpendPace,
+  factualBankCardGroups,
   formatInr,
   formatMonthLabel,
   getActiveEmisForMonth,
@@ -295,11 +296,13 @@ export function SafeSpendApp() {
   const bufferTarget = 5000;
 
   const isInitialCleanupMonth = selectedMonth === "2026-09";
+  
+  // Updated September Credit Card Bill reflecting factual spends + emergency spend (₹22,587)
   const creditCardBill = useMemo(() => {
     if (monthlyCardBills[selectedMonth] !== undefined) {
       return monthlyCardBills[selectedMonth];
     }
-    return isInitialCleanupMonth ? octoberSeedData.creditCardBill : 0;
+    return isInitialCleanupMonth ? 22587 : 0;
   }, [monthlyCardBills, selectedMonth, isInitialCleanupMonth]);
 
   const daddyRepayment = isInitialCleanupMonth ? 30000 : 0;
@@ -393,12 +396,12 @@ export function SafeSpendApp() {
     if (creditCardBill > 0) {
       list.push({
         id: `card-bill-${selectedMonth}`,
-        name: `Credit Card Settlement`,
-        lender: "Banks (HDFC/Axis/Yes)",
+        name: `Credit Cards Settlement`,
+        lender: "3 Shared Bank Groups (8 Cards)",
         totalAmount: creditCardBill,
         categoryType: "card",
         priority: "high",
-        note: "Clear card dues to stop high interest",
+        note: "Clear card dues to stop high interest (₹22,587 due)",
       });
     }
 
@@ -1364,52 +1367,51 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
-                {/* Right 4 Cols: Cards & Pace Widget */}
+                {/* Right 4 Cols: FACTUAL CREDIT CARDS SUMMARY & Pace Widget */}
                 <div className="lg:col-span-4 space-y-6">
-                  {/* My Credit Cards Widget */}
+                  {/* Factual Credit Cards Summary Widget */}
                   <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-extrabold text-slate-900">My Credit Cards</h3>
-                      <span className="text-xs font-bold text-slate-400">Limits</span>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Credit Cards Summary</h3>
+                        <p className="text-[11px] text-slate-400 font-semibold">8 Cards · 3 Shared Bank Groups</p>
+                      </div>
+                      <Chip color="danger" size="sm" variant="soft">
+                        Due: ₹22,587
+                      </Chip>
                     </div>
 
-                    <div className="space-y-3">
-                      <div className="rounded-2xl bg-[#18181b] text-white p-4 space-y-3 shadow-md">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-extrabold tracking-wider text-slate-300">HDFC Millennia</span>
-                          <Chip color="success" size="sm" variant="soft">Active</Chip>
-                        </div>
-                        <p className="font-mono text-xs font-extrabold tracking-widest text-slate-300">•••• •••• 6782</p>
-                        <div className="flex justify-between items-end text-xs pt-1 border-t border-slate-800">
-                          <div>
-                            <p className="text-[10px] text-slate-400 uppercase font-bold">Used</p>
-                            <p className="font-mono font-bold text-white">₹0</p>
+                    {/* Compact Card Group Previews */}
+                    <div className="space-y-2.5">
+                      {factualBankCardGroups.map((group) => (
+                        <div key={group.bankName} className={cn("rounded-2xl p-3.5 space-y-2 shadow-xs", group.colorTheme)}>
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-extrabold tracking-wide">{group.bankName}</span>
+                            <span className="text-[10px] font-mono opacity-80">Limit: {formatInr(group.sharedLimit)}</span>
                           </div>
-                          <div className="text-right">
-                            <p className="text-[10px] text-slate-400 uppercase font-bold">Limit</p>
-                            <p className="font-mono font-bold text-white">₹75,000</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="rounded-2xl bg-[#D96653] text-white p-4 space-y-3 shadow-md">
-                        <div className="flex justify-between items-center text-xs">
-                          <span className="font-extrabold tracking-wider text-orange-100">Axis MyZone</span>
-                          <Chip color="success" size="sm" variant="soft">Active</Chip>
-                        </div>
-                        <p className="font-mono text-xs font-extrabold tracking-widest text-orange-100">•••• •••• 4356</p>
-                        <div className="flex justify-between items-end text-xs pt-1 border-t border-white/20">
-                          <div>
-                            <p className="text-[10px] text-orange-100 uppercase font-bold">Used</p>
-                            <p className="font-mono font-bold text-white">₹0</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[10px] text-orange-100 uppercase font-bold">Limit</p>
-                            <p className="font-mono font-bold text-white">₹50,000</p>
+                          <div className="flex justify-between items-end border-t border-white/20 pt-2 text-xs">
+                            <div>
+                              <p className="text-[9px] uppercase font-bold opacity-75">{group.cards.length} Cards Shared</p>
+                              <p className="text-[11px] font-bold truncate max-w-[140px]">
+                                {group.cards.map(c => c.brandTag).join(" · ")}
+                              </p>
+                            </div>
+                            <div className="text-right">
+                              <p className="text-[9px] uppercase font-bold opacity-75">Group Outstanding</p>
+                              <p className="font-mono font-black">{formatInr(group.totalOutstandingSpend)}</p>
+                            </div>
                           </div>
                         </div>
-                      </div>
+                      ))}
                     </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveTab("cards")}
+                      className="w-full py-2 text-center text-xs font-extrabold text-[#D96653] hover:underline"
+                    >
+                      View All 8 Cards & Detailed Spends →
+                    </button>
                   </div>
 
                   {/* Budget Pace Widget */}
@@ -1453,7 +1455,7 @@ export function SafeSpendApp() {
           {/* TAB 2: OVERVIEW & PLAN */}
           {activeTab === "plan" && (
             <div className="space-y-6">
-              {/* Income Sources Management Card (With + Add Income Button & Deletion Support) */}
+              {/* Income Sources Management Card */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
@@ -1487,7 +1489,6 @@ export function SafeSpendApp() {
                           {source.status === "received" ? "Received ✓" : "Expected"}
                         </Button>
 
-                        {/* Allow deleting custom non-primary income sources */}
                         {source.id !== `salary-${selectedMonth}` && source.id !== "sal-oct" && (
                           <Button
                             aria-label="Delete income source"
@@ -1548,7 +1549,7 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 4: EMIS & DEBT LEDGER (WITH COMPLETE GRAND TOTAL & SECTION BREAKDOWNS DISPLAYED) */}
+          {/* TAB 4: EMIS & DEBT LEDGER */}
           {activeTab === "emis" && (
             <div className="space-y-6">
               {/* GRAND TOTAL SUMMARY CARD FOR EMIS */}
@@ -1657,46 +1658,94 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 5: CARDS */}
+          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (8 CARDS ACROSS 3 SHARED BANK GROUPS) */}
           {activeTab === "cards" && (
-            <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-6">
-              <h3 className="text-xl font-extrabold text-slate-900">Credit Cards & Usage Limits</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="rounded-2xl bg-[#18181b] text-white p-6 space-y-4 shadow-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-slate-300">HDFC Millennia Credit Card</span>
-                    <Chip color="success" size="sm">Active</Chip>
+            <div className="space-y-6">
+              {/* Grand Summary Badge Header */}
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900">Credit Cards & Shared Limits</h3>
+                    <p className="text-xs text-slate-400 font-medium">8 Total Cards held across 3 Shared Bank Limit Groups</p>
                   </div>
-                  <p className="font-mono text-xl font-black tracking-widest text-slate-200">•••• •••• •••• 6782</p>
-                  <div className="flex justify-between items-end border-t border-slate-800 pt-3 text-xs">
-                    <div>
-                      <p className="text-slate-400">Total Credit Limit</p>
-                      <p className="font-mono font-bold text-white text-base">₹75,000</p>
+                  <div className="flex items-center gap-3">
+                    <div className="text-right">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase">Total Outstanding Dues</p>
+                      <p className="text-2xl font-black font-mono text-[#D96653]">₹22,587</p>
                     </div>
-                    <div>
-                      <p className="text-slate-400">Due Status</p>
-                      <p className="font-bold text-emerald-400">No Dues Pending</p>
+                    <div className="text-right pl-3 border-l border-slate-200">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase">Total Combined Limit</p>
+                      <p className="text-2xl font-black font-mono text-slate-900">₹82,000</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#D96653] text-white p-6 space-y-4 shadow-lg">
-                  <div className="flex justify-between items-center">
-                    <span className="font-extrabold text-orange-100">Axis MyZone Credit Card</span>
-                    <Chip color="success" size="sm">Active</Chip>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
+                    <p className="text-xs font-extrabold text-slate-500 uppercase">Axis Bank (3 Cards Shared)</p>
+                    <p className="text-lg font-mono font-black text-slate-900 mt-0.5">₹5,035 spent out of ₹15,000</p>
                   </div>
-                  <p className="font-mono text-xl font-black tracking-widest text-orange-100">•••• •••• •••• 4356</p>
-                  <div className="flex justify-between items-end border-t border-white/20 pt-3 text-xs">
-                    <div>
-                      <p className="text-orange-200">Total Credit Limit</p>
-                      <p className="font-mono font-bold text-white text-base">₹50,000</p>
-                    </div>
-                    <div>
-                      <p className="text-orange-200">Due Status</p>
-                      <p className="font-bold text-white">No Dues Pending</p>
-                    </div>
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
+                    <p className="text-xs font-extrabold text-slate-500 uppercase">HDFC Bank (3 Cards Shared)</p>
+                    <p className="text-lg font-mono font-black text-slate-900 mt-0.5">₹10,601 spent out of ₹40,000</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
+                    <p className="text-xs font-extrabold text-slate-500 uppercase">YES Bank Uni (2 Cards Shared)</p>
+                    <p className="text-lg font-mono font-black text-slate-900 mt-0.5">₹1,640 spent out of ₹27,000</p>
                   </div>
                 </div>
+              </div>
+
+              {/* FACTUAL BANK CARD GROUPS DISPLAY (WITH CLEAN VISUAL BRAND CARDS, NO RAW NUMBERS) */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {factualBankCardGroups.map((group) => (
+                  <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
+                    <div className="space-y-3">
+                      {/* Visual Bank Group Header Card */}
+                      <div className={cn("rounded-2xl p-5 space-y-4 shadow-md relative overflow-hidden", group.colorTheme)}>
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-black tracking-wider uppercase">{group.bankName}</span>
+                          <Chip color="success" size="sm" variant="soft">Active Group</Chip>
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-[10px] uppercase font-bold opacity-75">Shared Credit Limit</p>
+                          <p className="font-mono text-2xl font-black">{formatInr(group.sharedLimit)}</p>
+                        </div>
+                        <div className="flex justify-between items-end text-xs border-t border-white/20 pt-2.5">
+                          <div>
+                            <p className="text-[9px] uppercase font-bold opacity-75">Cards in Group</p>
+                            <p className="font-bold">{group.cards.length} Cards Shared</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[9px] uppercase font-bold opacity-75">Group Outstanding</p>
+                            <p className="font-mono font-black text-sm">{formatInr(group.totalOutstandingSpend)}</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Individual Cards List in Group */}
+                      <div className="space-y-2 pt-1">
+                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">Individual Card Spends</p>
+                        {group.cards.map((card) => (
+                          <div key={card.name} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60">
+                            <div>
+                              <p className="font-extrabold text-slate-900 text-xs">{card.name}</p>
+                              <p className="text-[10px] text-slate-400 font-semibold">{card.brandTag} · since {card.sinceDate}</p>
+                            </div>
+                            <span className="font-mono text-xs font-black text-slate-900">
+                              {card.spendAmount > 0 ? formatInr(card.spendAmount) : "₹0"}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-extrabold text-slate-600">
+                      <span>Available Credit</span>
+                      <span className="font-mono font-black text-emerald-600">{formatInr(group.sharedLimit - group.totalOutstandingSpend)}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
