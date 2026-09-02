@@ -211,7 +211,8 @@ export function SafeSpendApp() {
   const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // New Income Entry Form States
+  // Income Entry Form & Edit States
+  const [editingIncomeId, setEditingIncomeId] = useState<string | null>(null);
   const [newIncomeName, setNewIncomeName] = useState("");
   const [newIncomeAmount, setNewIncomeAmount] = useState("");
   const [newIncomeDate, setNewIncomeDate] = useState("");
@@ -496,23 +497,49 @@ export function SafeSpendApp() {
     return list;
   }, [entries, spendListFilter, searchQuery]);
 
-  function handleAddIncome(e: FormEvent) {
+  function startEditingIncome(source: IncomeSource) {
+    setEditingIncomeId(source.id);
+    setNewIncomeName(source.name);
+    setNewIncomeAmount(String(source.amount));
+    setNewIncomeDate(source.expectedDate);
+    setShowAddIncomeModal(true);
+  }
+
+  function handleSaveIncome(e: FormEvent) {
     e.preventDefault();
     const parsed = Number(newIncomeAmount);
     if (!newIncomeName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
 
-    const newSource: IncomeSource = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: newIncomeName.trim(),
-      amount: Math.round(parsed),
-      expectedDate: newIncomeDate.trim() || "Expected this month",
-      status: "expected",
-    };
+    if (editingIncomeId) {
+      setMonthlyIncomes((prev) => {
+        const list = prev[selectedMonth] ?? currentIncomes;
+        const updated = list.map((item) =>
+          item.id === editingIncomeId
+            ? {
+                ...item,
+                name: newIncomeName.trim(),
+                amount: Math.round(parsed),
+                expectedDate: newIncomeDate.trim() || "Expected this month",
+              }
+            : item,
+        );
+        return { ...prev, [selectedMonth]: updated };
+      });
+      setEditingIncomeId(null);
+    } else {
+      const newSource: IncomeSource = {
+        id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+        name: newIncomeName.trim(),
+        amount: Math.round(parsed),
+        expectedDate: newIncomeDate.trim() || "Expected this month",
+        status: "expected",
+      };
 
-    setMonthlyIncomes((prev) => ({
-      ...prev,
-      [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
-    }));
+      setMonthlyIncomes((prev) => ({
+        ...prev,
+        [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
+      }));
+    }
 
     setNewIncomeName("");
     setNewIncomeAmount("");
@@ -549,12 +576,8 @@ export function SafeSpendApp() {
     setShowSpendModal(true);
   }
 
-  function cancelEditingEntry() {
-    setEditingEntryId(null);
-    setAmount("");
-    setNote("");
-    setSpendDate(getLocalDateString());
-    setShowSpendModal(false);
+  function deleteSpendEntry(entryId: string) {
+    setEntries((prev) => prev.filter((e) => e.id !== entryId));
   }
 
   function addSpend(event: FormEvent<HTMLFormElement>) {
@@ -744,13 +767,24 @@ export function SafeSpendApp() {
               <Button
                 variant="outline"
                 className="h-10 px-4 text-xs font-black border-[#D96653] text-[#D96653] hover:bg-orange-50 rounded-full cursor-pointer"
-                onPress={() => setShowAddIncomeModal(true)}
+                onPress={() => {
+                  setEditingIncomeId(null);
+                  setNewIncomeName("");
+                  setNewIncomeAmount("");
+                  setNewIncomeDate("");
+                  setShowAddIncomeModal(true);
+                }}
               >
                 <Plus className="mr-1 size-3.5 text-[#D96653]" /> + Income Source
               </Button>
               <Button
                 className="h-10 px-5 text-xs font-black bg-[#D96653] hover:bg-[#c05543] text-white rounded-full shadow-sm cursor-pointer"
-                onPress={() => setShowSpendModal(true)}
+                onPress={() => {
+                  setEditingEntryId(null);
+                  setAmount("");
+                  setNote("");
+                  setShowSpendModal(true);
+                }}
               >
                 <Plus className="mr-1 size-4" /> + Log Spend / Pay
               </Button>
@@ -899,14 +933,15 @@ export function SafeSpendApp() {
           </div>
         )}
 
-        {/* ADD INCOME SOURCE MODAL OVERLAY */}
+        {/* ADD / EDIT INCOME SOURCE MODAL OVERLAY */}
         {showAddIncomeModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
             <div className="fixed inset-0" onClick={() => setShowAddIncomeModal(false)} />
             <div className="relative z-10 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Plus className="size-4 text-emerald-600" /> Add Income Source ({formatMonthLabel(selectedMonth)})
+                  {editingIncomeId ? <Pencil className="size-4 text-emerald-600" /> : <Plus className="size-4 text-emerald-600" />}
+                  {editingIncomeId ? `Edit Income Source` : `Add Income Source (${formatMonthLabel(selectedMonth)})`}
                 </h3>
                 <button
                   type="button"
@@ -917,13 +952,13 @@ export function SafeSpendApp() {
                 </button>
               </div>
 
-              <form onSubmit={handleAddIncome} className="space-y-4">
+              <form onSubmit={handleSaveIncome} className="space-y-4">
                 <div className="space-y-1.5">
                   <label htmlFor="income-name" className="text-xs font-extrabold text-slate-700 block">Income Source Name</label>
                   <input
                     id="income-name"
                     required
-                    placeholder="e.g. Freelance Client Payment, Performance Bonus..."
+                    placeholder="e.g. Zenerative Minds Salary, Sri Comforts..."
                     value={newIncomeName}
                     onChange={(e) => setNewIncomeName(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
@@ -939,7 +974,7 @@ export function SafeSpendApp() {
                       inputMode="numeric"
                       required
                       min="1"
-                      placeholder="e.g. 25000"
+                      placeholder="e.g. 60000"
                       type="number"
                       value={newIncomeAmount}
                       onChange={(e) => setNewIncomeAmount(e.target.value)}
@@ -952,7 +987,7 @@ export function SafeSpendApp() {
                   <label htmlFor="income-date" className="text-xs font-extrabold text-slate-700 block">Expected Date / Note</label>
                   <input
                     id="income-date"
-                    placeholder="e.g. Day 10 EOD, 15th of the month..."
+                    placeholder="e.g. Sep 2 EOD, Mid September..."
                     value={newIncomeDate}
                     onChange={(e) => setNewIncomeDate(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
@@ -961,7 +996,7 @@ export function SafeSpendApp() {
 
                 <div className="flex items-center gap-2 pt-2">
                   <Button className="h-11 flex-1 text-sm font-extrabold bg-emerald-600 text-white rounded-2xl shadow-xs hover:bg-emerald-700" type="submit">
-                    Save Income Source
+                    {editingIncomeId ? "Update Income Source" : "Save Income Source"}
                   </Button>
                   <Button
                     type="button"
@@ -1074,7 +1109,7 @@ export function SafeSpendApp() {
 
                 <div className="flex items-center gap-2 pt-2">
                   <Button className="h-11 flex-1 text-sm font-extrabold bg-[#D96653] text-white rounded-2xl shadow-xs" type="submit">
-                    {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
+                    {editingEntryId ? "Update Transaction" : "Save Spend / Payment"}
                   </Button>
                   <Button
                     type="button"
@@ -1115,7 +1150,13 @@ export function SafeSpendApp() {
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
                     <button
                       type="button"
-                      onClick={() => setShowAddIncomeModal(true)}
+                      onClick={() => {
+                        setEditingIncomeId(null);
+                        setNewIncomeName("");
+                        setNewIncomeAmount("");
+                        setNewIncomeDate("");
+                        setShowAddIncomeModal(true);
+                      }}
                       className="rounded-full bg-white/20 hover:bg-white/30 p-1.5 text-white transition-all"
                       title="Add Income Source"
                     >
@@ -1130,7 +1171,13 @@ export function SafeSpendApp() {
                       </span>
                       <button
                         type="button"
-                        onClick={() => setShowAddIncomeModal(true)}
+                        onClick={() => {
+                          setEditingIncomeId(null);
+                          setNewIncomeName("");
+                          setNewIncomeAmount("");
+                          setNewIncomeDate("");
+                          setShowAddIncomeModal(true);
+                        }}
                         className="text-[11px] underline font-extrabold hover:text-white"
                       >
                         + Add
@@ -1257,7 +1304,7 @@ export function SafeSpendApp() {
                     </div>
                   </div>
 
-                  {/* Recent Activities Data Table */}
+                  {/* Recent Activities Data Table (WITH EDIT & DELETE OPTIONS FOR EVERY ENTRY) */}
                   <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <h3 className="text-base font-extrabold text-slate-900">Recent Transactions</h3>
@@ -1308,7 +1355,7 @@ export function SafeSpendApp() {
                             <th className="pb-2">Amount</th>
                             <th className="pb-2">Status</th>
                             <th className="pb-2">Date</th>
-                            <th className="pb-2 pr-2 text-right">Action</th>
+                            <th className="pb-2 pr-2 text-right">Actions</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
@@ -1349,13 +1396,24 @@ export function SafeSpendApp() {
                                   </td>
                                   <td className="py-3 text-slate-500 font-mono text-[11px]">{entry.date}</td>
                                   <td className="py-3 pr-2 text-right">
-                                    <button
-                                      type="button"
-                                      onClick={() => startEditingEntry(entry)}
-                                      className="p-1 text-slate-400 hover:text-slate-700"
-                                    >
-                                      <Pencil className="size-3.5" />
-                                    </button>
+                                    <div className="flex items-center justify-end gap-1">
+                                      <button
+                                        type="button"
+                                        title="Edit transaction"
+                                        onClick={() => startEditingEntry(entry)}
+                                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
+                                      >
+                                        <Pencil className="size-3.5" />
+                                      </button>
+                                      <button
+                                        type="button"
+                                        title="Delete transaction"
+                                        onClick={() => deleteSpendEntry(entry.id)}
+                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                      >
+                                        <Trash2 className="size-3.5" />
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               );
@@ -1455,17 +1513,23 @@ export function SafeSpendApp() {
           {/* TAB 2: OVERVIEW & PLAN */}
           {activeTab === "plan" && (
             <div className="space-y-6">
-              {/* Income Sources Management Card */}
+              {/* Income Sources Management Card (WITH EDIT & DELETE OPTIONS FOR EVERY INCOME SOURCE) */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="text-xl font-extrabold text-slate-900">Income Sources for {formatMonthLabel(selectedMonth)}</h3>
-                    <p className="text-xs text-slate-400 font-medium">Manage all salary, freelance, bonus, or secondary income streams</p>
+                    <p className="text-xs text-slate-400 font-medium">Manage, edit, or delete any salary, freelance, bonus, or secondary income stream</p>
                   </div>
 
                   <Button
                     className="h-9 px-4 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-xs cursor-pointer"
-                    onPress={() => setShowAddIncomeModal(true)}
+                    onPress={() => {
+                      setEditingIncomeId(null);
+                      setNewIncomeName("");
+                      setNewIncomeAmount("");
+                      setNewIncomeDate("");
+                      setShowAddIncomeModal(true);
+                    }}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Income Source
                   </Button>
@@ -1478,8 +1542,9 @@ export function SafeSpendApp() {
                         <p className="font-extrabold text-slate-900 text-sm">{source.name}</p>
                         <p className="text-xs text-slate-500">Expected: <span className="font-semibold text-slate-700">{source.expectedDate}</span></p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-mono text-base font-black text-slate-900">{formatInr(source.amount)}</span>
+                      <div className="flex items-center gap-2">
+                        <span className="font-mono text-base font-black text-slate-900 mr-1">{formatInr(source.amount)}</span>
+                        
                         <Button
                           size="sm"
                           variant={source.status === "received" ? "secondary" : "outline"}
@@ -1489,17 +1554,27 @@ export function SafeSpendApp() {
                           {source.status === "received" ? "Received ✓" : "Expected"}
                         </Button>
 
-                        {source.id !== `salary-${selectedMonth}` && source.id !== "sal-oct" && (
-                          <Button
-                            aria-label="Delete income source"
-                            size="sm"
-                            variant="ghost"
-                            className="size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
-                            onPress={() => deleteIncome(source.id)}
-                          >
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        )}
+                        {/* EDIT INCOME SOURCE BUTTON */}
+                        <Button
+                          aria-label="Edit income source"
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-slate-500 hover:text-slate-900 hover:bg-slate-200 rounded-xl min-w-0"
+                          onPress={() => startEditingIncome(source)}
+                        >
+                          <Pencil className="size-3.5" />
+                        </Button>
+
+                        {/* DELETE INCOME SOURCE BUTTON */}
+                        <Button
+                          aria-label="Delete income source"
+                          size="sm"
+                          variant="ghost"
+                          className="size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
+                          onPress={() => deleteIncome(source.id)}
+                        >
+                          <Trash2 className="size-3.5" />
+                        </Button>
                       </div>
                     </div>
                   ))}
@@ -1658,7 +1733,7 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (8 CARDS ACROSS 3 SHARED BANK GROUPS) */}
+          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT */}
           {activeTab === "cards" && (
             <div className="space-y-6">
               {/* Grand Summary Badge Header */}
@@ -1696,7 +1771,7 @@ export function SafeSpendApp() {
                 </div>
               </div>
 
-              {/* FACTUAL BANK CARD GROUPS DISPLAY (WITH CLEAN VISUAL BRAND CARDS, NO RAW NUMBERS) */}
+              {/* FACTUAL BANK CARD GROUPS DISPLAY */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {factualBankCardGroups.map((group) => (
                   <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
