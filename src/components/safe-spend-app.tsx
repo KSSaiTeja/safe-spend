@@ -13,7 +13,6 @@ import {
   Clock,
   Coffee,
   CreditCard as CreditCardIcon,
-  Database,
   Dumbbell,
   FileText,
   Filter,
@@ -206,10 +205,23 @@ export function SafeSpendApp() {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
 
-  // Active view tab
+  // Active view tab (Spend Tracker is default #1)
   const [activeTab, setActiveTab] = useState<"spend" | "plan" | "invest" | "emis" | "cards">("spend");
   const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday">("all");
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Income entry form states for selected month
+  const [newIncomeName, setNewIncomeName] = useState("");
+  const [newIncomeAmount, setNewIncomeAmount] = useState("");
+  const [newIncomeDate, setNewIncomeDate] = useState("");
+  const [showAddIncome, setShowAddIncome] = useState(false);
+
+  // Custom Debt form states
+  const [showAddDebt, setShowAddDebt] = useState(false);
+  const [newDebtName, setNewDebtName] = useState("");
+  const [newDebtLender, setNewDebtLender] = useState("");
+  const [newDebtAmount, setNewDebtAmount] = useState("");
+  const [newDebtPriority, setNewDebtPriority] = useState<"high" | "normal">("high");
 
   useEffect(() => {
     window.localStorage.setItem(SPEND_STORAGE_KEY, JSON.stringify(entries));
@@ -231,7 +243,7 @@ export function SafeSpendApp() {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
 
-  // Current month incomes
+  // Current month incomes (Sai's real income sources)
   const currentIncomes: IncomeSource[] = useMemo(() => {
     if (monthlyIncomes[selectedMonth]) {
       return monthlyIncomes[selectedMonth];
@@ -250,7 +262,7 @@ export function SafeSpendApp() {
     ];
   }, [monthlyIncomes, selectedMonth]);
 
-  // Obligations
+  // Current month obligations & EMIs
   const currentPersonalEmis = useMemo(
     () => getActiveEmisForMonth(octoberSeedData.personalEmis, selectedMonth),
     [selectedMonth],
@@ -259,7 +271,14 @@ export function SafeSpendApp() {
     () => getActiveEmisForMonth(octoberSeedData.venkatPayableEmis, selectedMonth),
     [selectedMonth],
   );
-
+  const currentVenkatOnYourNameEmis = useMemo(
+    () => getActiveEmisForMonth(octoberSeedData.venkatReceivableEmis, selectedMonth),
+    [selectedMonth],
+  );
+  const currentOneTimeExpenses = useMemo(
+    () => octoberSeedData.futureOneTimeExpenses.filter((e) => e.month === selectedMonth),
+    [selectedMonth],
+  );
   const currentCustomDebts = useMemo(
     () => customDebts[selectedMonth] ?? [],
     [customDebts, selectedMonth],
@@ -273,9 +292,14 @@ export function SafeSpendApp() {
   );
   const monthPersonalEmisTotal = useMemo(() => sumAmounts(currentPersonalEmis), [currentPersonalEmis]);
   const monthVenkatPayableTotal = useMemo(() => sumAmounts(currentVenkatPayableEmis), [currentVenkatPayableEmis]);
+  const monthCustomDebtsTotal = useMemo(() => sumAmounts(currentCustomDebts.map(d => ({ amount: d.totalAmount }))), [currentCustomDebts]);
   const monthOutgoingEmis = monthPersonalEmisTotal + monthVenkatPayableTotal;
+  const monthVenkatDebitOnNameTotal = useMemo(() => sumAmounts(currentVenkatOnYourNameEmis), [currentVenkatOnYourNameEmis]);
+  const monthOneTimeTotal = useMemo(() => sumAmounts(currentOneTimeExpenses), [currentOneTimeExpenses]);
 
+  const monthLivingBudget = selectedMonth === "2026-09" ? 18000 : 15500;
   const bufferTarget = 5000;
+
   const isInitialCleanupMonth = selectedMonth === "2026-09";
   const creditCardBill = useMemo(() => {
     if (monthlyCardBills[selectedMonth] !== undefined) {
@@ -284,6 +308,15 @@ export function SafeSpendApp() {
     return isInitialCleanupMonth ? octoberSeedData.creditCardBill : 0;
   }, [monthlyCardBills, selectedMonth, isInitialCleanupMonth]);
 
+  const daddyRepayment = isInitialCleanupMonth ? 30000 : 0;
+  const venkatDirectPayment = isInitialCleanupMonth ? 46276 : selectedMonth === "2026-11" ? 3724 : 0;
+
+  const totalCoreObligations =
+    monthOutgoingEmis + monthLivingBudget + monthOneTimeTotal + creditCardBill + daddyRepayment + venkatDirectPayment + monthCustomDebtsTotal;
+
+  const netMonthSurplus = Math.max(0, monthTotalIncome - totalCoreObligations - bufferTarget);
+
+  // Tracked Debts & Obligations Ledger for selected month
   const allTrackedDebts = useMemo(() => {
     const list: Array<{
       id: string;
@@ -295,6 +328,7 @@ export function SafeSpendApp() {
       note?: string;
     }> = [];
 
+    // Priority People Debts (Daddy & Venkat)
     if (isInitialCleanupMonth) {
       list.push({
         id: "debt-daddy",
@@ -313,6 +347,16 @@ export function SafeSpendApp() {
         categoryType: "person",
         priority: "high",
         note: "Target balance repayment (₹46,276 safe)",
+      });
+    } else if (selectedMonth === "2026-11") {
+      list.push({
+        id: "debt-venkat-deferred",
+        name: "Venkat Deferred Balance",
+        lender: "Venkat",
+        totalAmount: 3724,
+        categoryType: "person",
+        priority: "high",
+        note: "Remaining Venkat balance payoff",
       });
     }
 
@@ -340,12 +384,38 @@ export function SafeSpendApp() {
       });
     });
 
+    currentVenkatPayableEmis.forEach((e) => {
+      list.push({
+        id: `emi-venkat-payable-${e.id}`,
+        name: `${e.name} EMI (to Venkat)`,
+        lender: "Venkat Shared EMI",
+        totalAmount: e.amount,
+        categoryType: "emi",
+        priority: "normal",
+        note: `Ends ${e.ends}`,
+      });
+    });
+
+    if (creditCardBill > 0) {
+      list.push({
+        id: `card-bill-${selectedMonth}`,
+        name: `Credit Card Settlement`,
+        lender: "Banks (HDFC/Axis/Yes)",
+        totalAmount: creditCardBill,
+        categoryType: "card",
+        priority: "high",
+        note: "Clear card dues to stop high interest",
+      });
+    }
+
     return list;
   }, [
     isInitialCleanupMonth,
     selectedMonth,
     currentCustomDebts,
     currentPersonalEmis,
+    currentVenkatPayableEmis,
+    creditCardBill,
   ]);
 
   const debtPaymentStats = useMemo(() => {
@@ -378,6 +448,18 @@ export function SafeSpendApp() {
   const currentLiveBankBalance = Math.max(0, monthIncomeReceived - totalDebtsPaidSoFar);
   const liveCashNeededInBank = totalRemainingPendingOutflows + bufferTarget;
 
+  const isBufferSweepActive = bufferSweeps[selectedMonth] ?? false;
+  const netBufferSweepSurplus = isBufferSweepActive ? bufferTarget : 0;
+  const projectedSurplusAboveBuffer = netMonthSurplus + netBufferSweepSurplus;
+
+  const investmentPlan = useMemo(
+    () => getInvestmentPlanForMonth(selectedMonth, projectedSurplusAboveBuffer > 0 ? projectedSurplusAboveBuffer : netMonthSurplus),
+    [selectedMonth, projectedSurplusAboveBuffer, netMonthSurplus],
+  );
+
+  const monthPreviews = useMemo(() => generateMonthPreviews(octoberSeedData), []);
+  const firstZeroEmiMonth = monthPreviews.find((preview) => preview.status === "emi-zero");
+
   const variableCategoryIds = new Set(
     octoberSeedData.expenses.filter((expense) => expense.kind === "variable").map((expense) => expense.id),
   );
@@ -386,6 +468,12 @@ export function SafeSpendApp() {
     .reduce((total, entry) => total + entry.amount, 0);
   const dayOfMonth = getSeptemberDay();
   const variableBudget = 9000;
+  const pace = calculateSafeSpendPace({
+    monthlyVariableBudget: variableBudget,
+    spentSoFar: variableSpent,
+    dayOfMonth,
+    daysInMonth: 30,
+  });
 
   const filteredEntries = useMemo(() => {
     const todayStr = getLocalDateString();
@@ -411,6 +499,57 @@ export function SafeSpendApp() {
 
     return list;
   }, [entries, spendListFilter, searchQuery]);
+
+  const selectedCategoryObj = useMemo(() => {
+    const livingCat = categoryOptions.find((c) => c.id === categoryId);
+    if (livingCat) return { label: livingCat.label, Icon: livingCat.icon, sub: livingCat.budget, color: livingCat.color };
+    const debtCat = debtPaymentStats.find((d) => d.id === categoryId);
+    if (debtCat) return { label: debtCat.name, Icon: debtCat.priority === "high" ? AlertCircle : UserCheck, sub: debtCat.isCleared ? "Cleared" : formatInr(debtCat.remainingBalance), color: "text-amber-600 bg-amber-50" };
+    return { label: "Select Category", Icon: Wallet, sub: "", color: "text-slate-700 bg-slate-50" };
+  }, [categoryId, debtPaymentStats]);
+
+  function handleAddIncome(e: FormEvent) {
+    e.preventDefault();
+    const parsed = Number(newIncomeAmount);
+    if (!newIncomeName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
+
+    const newSource: IncomeSource = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: newIncomeName.trim(),
+      amount: Math.round(parsed),
+      expectedDate: newIncomeDate.trim() || "Expected this month",
+      status: "expected",
+    };
+
+    setMonthlyIncomes((prev) => ({
+      ...prev,
+      [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
+    }));
+
+    setNewIncomeName("");
+    setNewIncomeAmount("");
+    setNewIncomeDate("");
+    setShowAddIncome(false);
+  }
+
+  function toggleIncomeStatus(sourceId: string) {
+    setMonthlyIncomes((prev) => {
+      const list = prev[selectedMonth] ?? currentIncomes;
+      const updated = list.map((item) =>
+        item.id === sourceId
+          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
+          : item,
+      );
+      return { ...prev, [selectedMonth]: updated };
+    });
+  }
+
+  function deleteIncome(sourceId: string) {
+    setMonthlyIncomes((prev) => {
+      const list = prev[selectedMonth] ?? currentIncomes;
+      return { ...prev, [selectedMonth]: list.filter((item) => item.id !== sourceId) };
+    });
+  }
 
   function startEditingEntry(entry: SpendEntry) {
     setEditingEntryId(entry.id);
@@ -471,6 +610,39 @@ export function SafeSpendApp() {
     setShowSpendModal(false);
   }
 
+  function handleAddDebt(e: FormEvent) {
+    e.preventDefault();
+    const parsed = Number(newDebtAmount);
+    if (!newDebtName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
+
+    const newDebt: CustomDebt = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: newDebtName.trim(),
+      lender: newDebtLender.trim() || "Private Lender",
+      totalAmount: Math.round(parsed),
+      category: "person",
+      priority: newDebtPriority,
+      month: selectedMonth,
+    };
+
+    setCustomDebts((prev) => ({
+      ...prev,
+      [selectedMonth]: [...(prev[selectedMonth] ?? []), newDebt],
+    }));
+
+    setNewDebtName("");
+    setNewDebtLender("");
+    setNewDebtAmount("");
+    setShowAddDebt(false);
+  }
+
+  function deleteDebt(debtId: string) {
+    setCustomDebts((prev) => {
+      const list = prev[selectedMonth] ?? [];
+      return { ...prev, [selectedMonth]: list.filter((item) => item.id !== debtId) };
+    });
+  }
+
   function resetLocalData() {
     setEntries([]);
     setMonthlyIncomes({});
@@ -503,29 +675,15 @@ export function SafeSpendApp() {
     return { daysInMonth, startDayOfWeek, days: list };
   }, [spendDate]);
 
-  // Finexy Exact Bar Chart Heights
-  const barHeights = [
-    { month: "Jan", orange: 40, black: 25 },
-    { month: "Feb", orange: 48, black: 28 },
-    { month: "Mar", orange: 44, black: 24 },
-    { month: "Apr", orange: 55, black: 32 },
-    { month: "May", orange: 60, black: 22 },
-    { month: "Jun", orange: 50, black: 26 },
-    { month: "Jul", orange: 58, black: 24 },
-    { month: "Aug", orange: 52, black: 20 },
-  ];
-
   return (
     <div className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans flex flex-col md:flex-row">
-      {/* Sleek Finexy Vertical Left Sidebar Dock (Exact Match to Screenshot) */}
+      {/* Finexy Vertical Left Sidebar Dock */}
       <aside className="hidden lg:flex flex-col items-center justify-between w-20 py-5 px-3 bg-white border-r border-slate-200/70 shrink-0 sticky top-0 h-screen z-40">
         <div className="flex flex-col items-center gap-6">
-          {/* Top Finexy Brand Icon */}
           <div className="flex size-10 items-center justify-center rounded-2xl bg-[#ff5c38] text-white shadow-md shadow-[#ff5c38]/30 cursor-pointer">
             <Landmark className="size-5" />
           </div>
 
-          {/* Navigation Dock Icons */}
           <div className="flex flex-col items-center gap-3">
             <button
               type="button"
@@ -534,7 +692,7 @@ export function SafeSpendApp() {
                 "size-10 rounded-2xl flex items-center justify-center transition-all",
                 activeTab === "spend" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
               )}
-              title="Overview"
+              title="Spend Tracker"
             >
               <LayoutGrid className="size-5" />
             </button>
@@ -543,7 +701,7 @@ export function SafeSpendApp() {
               type="button"
               onClick={() => setShowCalendarPopover(true)}
               className="size-10 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-              title="Calendar Picker"
+              title="Date Picker"
             >
               <CalendarIcon className="size-5" />
             </button>
@@ -555,9 +713,21 @@ export function SafeSpendApp() {
                 "size-10 rounded-2xl flex items-center justify-center transition-all",
                 activeTab === "plan" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
               )}
-              title="Mail / Plan"
+              title="Overview & Plan"
             >
-              <Mail className="size-5" />
+              <FileText className="size-5" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab("invest")}
+              className={cn(
+                "size-10 rounded-2xl flex items-center justify-center transition-all",
+                activeTab === "invest" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
+              )}
+              title="Investments"
+            >
+              <PiggyBank className="size-5" />
             </button>
 
             <button
@@ -567,9 +737,9 @@ export function SafeSpendApp() {
                 "size-10 rounded-2xl flex items-center justify-center transition-all",
                 activeTab === "emis" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
               )}
-              title="Reports / EMIs"
+              title="EMIs Ledger"
             >
-              <FileText className="size-5" />
+              <CreditCardIcon className="size-5" />
             </button>
 
             <button
@@ -579,48 +749,39 @@ export function SafeSpendApp() {
                 "size-10 rounded-2xl flex items-center justify-center transition-all",
                 activeTab === "cards" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
               )}
-              title="Cards & Accounts"
+              title="Credit Cards"
             >
-              <Users className="size-5" />
+              <Wallet className="size-5" />
             </button>
           </div>
         </div>
 
-        {/* Bottom Utility Icons */}
         <div className="flex flex-col items-center gap-3">
-          <button
-            type="button"
-            className="size-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100"
-            title="Help"
-          >
-            <HelpCircle className="size-4" />
-          </button>
           <button
             type="button"
             onClick={resetLocalData}
             className="size-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50"
-            title="Reset Data"
+            title="Reset Local Data"
           >
-            <LogOut className="size-4" />
+            <RefreshCcw className="size-4" />
           </button>
         </div>
       </aside>
 
-      {/* Main Workspace Column */}
+      {/* Main Workspace */}
       <div className="flex-1 min-w-0 pb-20">
-        {/* Top Header Navbar (Exact Finexy Layout) */}
+        {/* Finexy Header Navbar */}
         <header className="sticky top-0 z-30 bg-white/95 border-b border-slate-200/70 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-8">
           <div className="mx-auto max-w-6xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Logo Badge + Center Pill Navigation Menu */}
+            {/* Logo & Navigation Menu Pills */}
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <div className="flex size-8 items-center justify-center rounded-xl bg-[#ff5c38] text-white shadow-sm shadow-[#ff5c38]/30">
                   <Landmark className="size-4" />
                 </div>
-                <span className="text-lg font-black tracking-tight text-slate-900">Finexy<span className="text-[#ff5c38]">.</span></span>
+                <span className="text-lg font-black tracking-tight text-slate-900">SafeSpend<span className="text-[#ff5c38]">.</span></span>
               </div>
 
-              {/* Floating Pill Center Menu (Finexy Style) */}
               <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-full border border-slate-200/60 overflow-x-auto no-scrollbar">
                 <button
                   type="button"
@@ -630,7 +791,7 @@ export function SafeSpendApp() {
                     activeTab === "spend" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
                   )}
                 >
-                  Overview
+                  Spend Tracker
                 </button>
                 <button
                   type="button"
@@ -640,7 +801,7 @@ export function SafeSpendApp() {
                     activeTab === "plan" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
                   )}
                 >
-                  Activity
+                  Overview & Plan
                 </button>
                 <button
                   type="button"
@@ -650,7 +811,7 @@ export function SafeSpendApp() {
                     activeTab === "invest" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
                   )}
                 >
-                  Manage
+                  Invest
                 </button>
                 <button
                   type="button"
@@ -660,7 +821,7 @@ export function SafeSpendApp() {
                     activeTab === "emis" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
                   )}
                 >
-                  Program
+                  EMIs
                 </button>
                 <button
                   type="button"
@@ -670,48 +831,43 @@ export function SafeSpendApp() {
                     activeTab === "cards" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
                   )}
                 >
-                  Reports
+                  Cards
                 </button>
               </nav>
             </div>
 
-            {/* Right Action Icons & User Profile Pill */}
+            {/* Right Action Bar */}
             <div className="flex items-center gap-2">
-              <button
-                type="button"
-                className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200"
-              >
-                <Search className="size-3.5" />
-              </button>
-              <button
-                type="button"
-                className="size-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-600 hover:bg-slate-200 relative"
-              >
-                <Bell className="size-3.5" />
-                <span className="absolute top-1.5 right-1.5 size-1.5 bg-[#ff5c38] rounded-full" />
-              </button>
-
-              {/* Date & Month Selector Pills */}
+              {/* Primary Header Date Picker Pill */}
               <button
                 type="button"
                 onClick={() => setShowCalendarPopover(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer active:scale-95 transition-all"
               >
-                <CalendarIcon className="size-3 text-[#ff5c38]" />
+                <CalendarIcon className="size-3.5 text-[#ff5c38]" />
                 <span>{formatDateFormatted(spendDate)}</span>
                 <ChevronDown className="size-3 text-slate-400" />
               </button>
 
-              {/* User Profile Badge (Finexy Style) */}
+              {/* Month Selector Pill */}
+              <button
+                type="button"
+                onClick={() => setShowMonthDropdown(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-xs font-extrabold text-slate-900 hover:bg-slate-200 cursor-pointer"
+              >
+                <span>{formatMonthLabel(selectedMonth)}</span>
+                <ChevronDown className="size-3 text-slate-500" />
+              </button>
+
+              {/* User Avatar Badge */}
               <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
                 <div className="size-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">
-                  SR
+                  SK
                 </div>
                 <div className="text-left leading-tight">
-                  <p className="text-xs font-extrabold text-slate-900">Sajibur Rahman</p>
-                  <p className="text-[10px] text-slate-400">sajibur.rahman@gm...</p>
+                  <p className="text-xs font-extrabold text-slate-900">Sai Teja</p>
+                  <p className="text-[10px] text-slate-400">Zenerative Minds</p>
                 </div>
-                <ChevronDown className="size-3 text-slate-400" />
               </div>
             </div>
           </div>
@@ -798,14 +954,50 @@ export function SafeSpendApp() {
           </div>
         )}
 
-        {/* QUICK SPEND MODAL */}
+        {/* FORECAST MONTH SELECTOR MODAL OVERLAY */}
+        {showMonthDropdown && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+            <div className="fixed inset-0" onClick={() => setShowMonthDropdown(false)} />
+            <div className="relative z-10 w-full max-w-xs max-h-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl space-y-1">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2 px-2">
+                <span className="text-xs font-extrabold text-slate-900">Select Forecast Month</span>
+                <button
+                  type="button"
+                  className="size-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold"
+                  onClick={() => setShowMonthDropdown(false)}
+                >
+                  <X className="size-3.5" />
+                </button>
+              </div>
+              {allForecastMonths.map((m) => (
+                <button
+                  key={m.value}
+                  type="button"
+                  onClick={() => {
+                    setSelectedMonth(m.value);
+                    setShowMonthDropdown(false);
+                  }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors",
+                    selectedMonth === m.value ? "bg-slate-900 font-bold text-white" : "text-slate-700 hover:bg-slate-50",
+                  )}
+                >
+                  <span>{m.label}</span>
+                  {m.value === "2028-05" && <Chip color="accent" size="sm" variant="soft">Zero EMI Target</Chip>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* QUICK SPEND MODAL OVERLAY */}
         {showSpendModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
             <div className="fixed inset-0" onClick={() => setShowSpendModal(false)} />
             <div className="relative z-10 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Plus className="size-4 text-[#ff5c38]" /> {editingEntryId ? "Edit Transaction" : "Log Spend / Settlement"}
+                  <Plus className="size-4 text-[#ff5c38]" /> {editingEntryId ? "Edit Transaction" : "Quick Add Spend / Debt Payoff"}
                 </h3>
                 <button
                   type="button"
@@ -818,11 +1010,11 @@ export function SafeSpendApp() {
 
               <form onSubmit={addSpend} className="space-y-4">
                 <div className="space-y-1.5">
-                  <label htmlFor="quick-amount" className="text-xs font-extrabold text-slate-700 block">Amount (₹)</label>
+                  <label htmlFor="quick-modal-amount" className="text-xs font-extrabold text-slate-700 block">Amount (₹)</label>
                   <div className="relative">
                     <span className="absolute left-3.5 top-2.5 text-sm font-black text-slate-400 font-mono">₹</span>
                     <input
-                      id="quick-amount"
+                      id="quick-modal-amount"
                       inputMode="numeric"
                       min="1"
                       placeholder="e.g. 3500"
@@ -835,7 +1027,7 @@ export function SafeSpendApp() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-slate-700 block">Category</label>
+                  <label className="text-xs font-extrabold text-slate-700 block">Category / Debt</label>
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
@@ -883,9 +1075,9 @@ export function SafeSpendApp() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label htmlFor="quick-note" className="text-xs font-extrabold text-slate-700 block">Note (Optional)</label>
+                  <label htmlFor="quick-modal-note" className="text-xs font-extrabold text-slate-700 block">Note (Optional)</label>
                   <input
-                    id="quick-note"
+                    id="quick-modal-note"
                     placeholder="e.g. Grocery purchase..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
@@ -911,374 +1103,503 @@ export function SafeSpendApp() {
           </div>
         )}
 
-        {/* Dashboard Content Container */}
+        {/* Dashboard Workspace */}
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 space-y-6">
-          {/* Greeting Row with Sun/Moon Theme Badge */}
+          {/* Greeting Banner */}
           <div className="flex items-center justify-between">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
-                Good morning, Sajibur
+                Financial Overview 👋
               </h2>
               <p className="text-xs sm:text-sm font-medium text-slate-400 mt-0.5">
-                Stay on top of your tasks, monitor progress, and track status.
+                Safe spend pace, live bank liquidity, and zero-EMI roadmap for {formatMonthLabel(selectedMonth)}.
               </p>
             </div>
 
-            {/* Sun/Moon Theme Indicator Pill */}
-            <div className="flex items-center gap-1 bg-white p-1 rounded-full border border-slate-200/70 shadow-2xs">
-              <button type="button" className="size-7 rounded-full bg-slate-100 flex items-center justify-center text-slate-700">
-                <Sun className="size-3.5" />
-              </button>
-              <button type="button" className="size-7 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700">
-                <Moon className="size-3.5" />
-              </button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                className="h-9 px-4 text-xs font-extrabold bg-[#ff5c38] text-white rounded-full shadow-xs hover:bg-orange-600"
+                onPress={() => setShowSpendModal(true)}
+              >
+                <Plus className="mr-1 size-3.5" /> Log Spend
+              </Button>
             </div>
           </div>
 
-          {/* Main Grid Section (Finexy 3-Column Top Grid) */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left 4 Cols: Total Balance & Wallets */}
-            <div className="lg:col-span-4 rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-5 flex flex-col justify-between">
-              <div className="space-y-3">
-                <div className="flex justify-between items-center">
-                  <span className="text-xs font-extrabold text-slate-400">Total Balance</span>
-                  <div className="flex items-center gap-1 text-xs font-extrabold text-slate-800 bg-slate-100 px-2.5 py-1 rounded-full">
-                    <span>🇺🇸 USD</span> <ChevronDown className="size-3 text-slate-400" />
+          {/* TAB 1: SPEND TRACKER (DEFAULT VIEW #1) */}
+          {activeTab === "spend" && (
+            <div className="space-y-6">
+              {/* Top 4 Finexy Metric Cards Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                {/* Featured Coral Card: Total Monthly Income */}
+                <div className="rounded-3xl bg-[#ff5c38] text-white p-5 shadow-sm space-y-3 relative overflow-hidden flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
+                    <span className="rounded-full bg-white/20 p-1.5 text-white">
+                      <IndianRupee className="size-3.5" />
+                    </span>
                   </div>
-                </div>
-
-                <div>
-                  <p className="text-3xl sm:text-4xl font-black font-mono tracking-tight text-slate-900">{formatInr(currentLiveBankBalance)}</p>
-                  <p className="text-xs font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                    <TrendingUp className="size-3" /> ↑ 5% than last month
-                  </p>
-                </div>
-
-                {/* Transfer & Request Action Buttons (Finexy Exact Style) */}
-                <div className="grid grid-cols-2 gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowSpendModal(true)}
-                    className="h-10 bg-[#18181b] hover:bg-slate-800 text-white rounded-full text-xs font-extrabold flex items-center justify-center gap-1.5 shadow-xs transition-all active:scale-95 cursor-pointer"
-                  >
-                    <span>⇆ Transfer</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSpendModal(true)}
-                    className="h-10 bg-[#f4f5f7] hover:bg-slate-200 text-slate-900 rounded-full text-xs font-extrabold flex items-center justify-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <span>⇆ Request</span>
-                  </button>
-                </div>
-              </div>
-
-              {/* Wallets Strip (Finexy Exact Style) */}
-              <div className="space-y-2 pt-4 border-t border-slate-100">
-                <div className="flex justify-between items-center text-xs">
-                  <span className="font-extrabold text-slate-400">Wallets</span>
-                  <span className="font-medium text-slate-400">Total 6 wallets</span>
-                </div>
-
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-2.5 space-y-0.5">
-                    <p className="text-[10px] font-extrabold text-slate-700 flex items-center gap-1">
-                      <span>🇺🇸</span> USD
+                  <div>
+                    <p className="text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
+                    <p className="text-xs font-semibold text-orange-100 mt-1 flex items-center gap-1">
+                      <TrendingUp className="size-3.5 text-white" />
+                      <span>Received: {formatInr(monthIncomeReceived)}</span>
                     </p>
-                    <p className="font-mono text-xs font-black text-slate-900">$22,678</p>
-                    <p className="text-[9px] text-emerald-600 font-bold">• Active</p>
                   </div>
+                </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-2.5 space-y-0.5">
-                    <p className="text-[10px] font-extrabold text-slate-700 flex items-center gap-1">
-                      <span>🇪🇺</span> EUR
+                {/* White Card: Outgoing EMIs */}
+                <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Outgoing EMIs</span>
+                    <span className="rounded-full bg-slate-100 p-1.5 text-slate-700">
+                      <CreditCardIcon className="size-3.5" />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
+                    <p className="text-xs font-medium text-slate-500 mt-1">
+                      {currentPersonalEmis.length} Personal · {currentVenkatPayableEmis.length} Venkat
                     </p>
-                    <p className="font-mono text-xs font-black text-slate-900">€18,345</p>
-                    <p className="text-[9px] text-emerald-600 font-bold">• Active</p>
                   </div>
+                </div>
 
-                  <div className="rounded-2xl border border-slate-200/80 bg-slate-50 p-2.5 space-y-0.5">
-                    <p className="text-[10px] font-extrabold text-slate-700 flex items-center gap-1">
-                      <span>🇬🇧</span> GBP
+                {/* White Card: Live Bank Balance */}
+                <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Live Bank Balance</span>
+                    <span className="rounded-full bg-emerald-50 p-1.5 text-emerald-600">
+                      <Landmark className="size-3.5" />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(currentLiveBankBalance)}</p>
+                    <p className="text-xs font-bold text-emerald-600 mt-1">
+                      {currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety Buffer Intact" : "⚠️ Cash Needed"}
                     </p>
-                    <p className="font-mono text-xs font-black text-slate-900">£15,000</p>
-                    <p className="text-[9px] text-slate-400 font-bold">• Inactive</p>
+                  </div>
+                </div>
+
+                {/* White Card: Required Reserve */}
+                <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
+                  <div className="flex justify-between items-start">
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Must Keep in Bank</span>
+                    <span className="rounded-full bg-blue-50 p-1.5 text-blue-600">
+                      <PiggyBank className="size-3.5" />
+                    </span>
+                  </div>
+                  <div>
+                    <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(liveCashNeededInBank)}</p>
+                    <p className="text-xs font-medium text-slate-500 mt-1">
+                      Pending: {formatInr(totalRemainingPendingOutflows)} + ₹5k
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Middle 4 Cols: 2x2 Metric Grid (With Featured Coral Card) */}
-            <div className="lg:col-span-4 grid grid-cols-2 gap-4">
-              {/* Featured Solid Vibrant Coral Card */}
-              <div className="rounded-3xl bg-[#ff5c38] text-white p-4 sm:p-5 shadow-sm space-y-3 relative overflow-hidden flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Earnings</span>
-                  <span className="rounded-full bg-white/20 p-1.5 text-white">
-                    <IndianRupee className="size-3.5" />
-                  </span>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
-                  <p className="text-[11px] font-semibold text-orange-100 mt-1 flex items-center gap-1">
-                    <TrendingUp className="size-3 text-white" /> ↑ 7% This month
-                  </p>
-                </div>
-              </div>
-
-              {/* White Metric Card: Total Spending */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Spending</span>
-                  <span className="rounded-full bg-slate-100 p-1.5 text-slate-700">
-                    <CreditCardIcon className="size-3.5" />
-                  </span>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
-                  <p className="text-[11px] font-bold text-red-500 mt-1 flex items-center gap-1">
-                    <TrendingDown className="size-3 text-red-500" /> ↓ 5% This month
-                  </p>
-                </div>
-              </div>
-
-              {/* White Metric Card: Total Income */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Income</span>
-                  <span className="rounded-full bg-emerald-50 p-1.5 text-emerald-600">
-                    <Landmark className="size-3.5" />
-                  </span>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthIncomeReceived)}</p>
-                  <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                    <TrendingUp className="size-3 text-emerald-600" /> ↑ 8% This month
-                  </p>
-                </div>
-              </div>
-
-              {/* White Metric Card: Total Revenue */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-3 flex flex-col justify-between">
-                <div className="flex justify-between items-start">
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Revenue</span>
-                  <span className="rounded-full bg-blue-50 p-1.5 text-blue-600">
-                    <PiggyBank className="size-3.5" />
-                  </span>
-                </div>
-                <div>
-                  <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(liveCashNeededInBank)}</p>
-                  <p className="text-[11px] font-bold text-emerald-600 mt-1 flex items-center gap-1">
-                    <TrendingUp className="size-3 text-emerald-600" /> ↑ 4% This month
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Right 4 Cols: Finexy Cashflow Stacked Bar Chart Widget */}
-            <div className="lg:col-span-4 rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4 flex flex-col justify-between">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-base font-extrabold text-slate-900">Total Income</h3>
-                  <p className="text-[11px] text-slate-400 font-medium">View your income in a certain period of time</p>
-                </div>
-                <div className="flex items-center gap-2 text-[10px] font-extrabold">
-                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#ff5c38]" /> Profit</span>
-                  <span className="flex items-center gap-1"><span className="size-2 rounded-full bg-[#18181b]" /> Loss</span>
-                </div>
-              </div>
-
-              {/* Finexy Dual Color Stacked Bars (Jan - Aug) */}
-              <div className="flex items-end justify-between gap-2 h-44 pt-4 border-b border-slate-100">
-                {barHeights.map((bar) => (
-                  <div key={bar.month} className="flex-1 flex flex-col items-center gap-1.5 h-full justify-end">
-                    <div className="w-full max-w-[18px] flex flex-col gap-0.5 items-center">
-                      <div
-                        className="w-full rounded-t-sm bg-[#ff5c38]"
-                        style={{ height: `${bar.orange}px` }}
-                      />
-                      <div
-                        className="w-full rounded-b-sm bg-[#18181b]"
-                        style={{ height: `${bar.black}px` }}
-                      />
+              {/* Main Content Grid: Left Column (8 cols) & Right Column (4 cols) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                {/* Left 8 Cols: Tracked Debts Ledger & Recent Activities Table */}
+                <div className="lg:col-span-8 space-y-6">
+                  {/* Tracked Obligations & Priority Debt Ledger */}
+                  <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Priority Debt & Obligation Ledger</h3>
+                        <p className="text-xs text-slate-400 font-medium">Track repayments for {formatMonthLabel(selectedMonth)}</p>
+                      </div>
+                      <Chip color="warning" size="sm" variant="soft">
+                        Pending: {formatInr(totalRemainingPendingOutflows)}
+                      </Chip>
                     </div>
-                    <span className="text-[10px] font-bold text-slate-400">{bar.month}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
 
-          {/* Bottom Grid Section: Monthly Limit + My Cards + Recent Activities */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-            {/* Left 4 Cols: Monthly Spending Limit & My Cards Stack */}
-            <div className="lg:col-span-4 space-y-6">
-              {/* Monthly Spending Limit Widget (Finexy Style) */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
-                <h3 className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Monthly Spending Limit</h3>
-                <div className="space-y-2">
-                  <div className="h-3 w-full bg-slate-100 rounded-full overflow-hidden flex">
-                    <div className="bg-[#ff5c38] h-full rounded-full" style={{ width: `${Math.min(100, (variableSpent / variableBudget) * 100)}%` }} />
-                  </div>
-                  <div className="flex justify-between items-center text-xs font-extrabold text-slate-800">
-                    <span>{formatInr(variableSpent)} spent out of</span>
-                    <span>{formatInr(variableBudget)}</span>
-                  </div>
-                </div>
-              </div>
+                    <div className="space-y-3">
+                      {debtPaymentStats.map((debt) => (
+                        <div key={debt.id} className="rounded-2xl border border-slate-200/70 p-3.5 bg-slate-50/50 space-y-2">
+                          <div className="flex justify-between items-center text-xs">
+                            <span className="font-extrabold text-slate-900 flex items-center gap-2">
+                              {debt.priority === "high" ? (
+                                <AlertCircle className="size-4 text-[#ff5c38]" />
+                              ) : (
+                                <UserCheck className="size-4 text-emerald-600" />
+                              )}
+                              {debt.name}
+                            </span>
+                            <span className="font-mono font-black text-slate-900">
+                              {debt.isCleared ? "CLEARED ✓" : `${formatInr(debt.paidSoFar)} / ${formatInr(debt.totalAmount)}`}
+                            </span>
+                          </div>
 
-              {/* Finexy My Cards Widget */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <CreditCardIcon className="size-4 text-slate-700" />
-                    <h3 className="text-base font-extrabold text-slate-900">My Cards</h3>
-                  </div>
-                  <button type="button" onClick={() => setShowSpendModal(true)} className="text-xs font-bold text-slate-500 hover:text-slate-900">
-                    + Add new
-                  </button>
-                </div>
+                          <ProgressBar
+                            value={Math.min(100, (debt.paidSoFar / debt.totalAmount) * 100)}
+                            className="h-2"
+                          />
 
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Black Card (Finexy Exact Style) */}
-                  <div className="rounded-2xl bg-[#18181b] text-white p-4 space-y-3 shadow-md">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-mono text-[10px] text-slate-400">(((•)))</span>
-                      <Chip color="success" size="sm" variant="soft">Active</Chip>
-                    </div>
-                    <p className="font-mono text-xs font-extrabold tracking-widest text-slate-300">**** **** 6782</p>
-                    <div className="flex justify-between text-[10px] text-slate-400 pt-1 border-t border-slate-800">
-                      <div>
-                        <p className="uppercase">Card Number</p>
-                        <p className="text-white font-mono">**** 6782</p>
-                      </div>
-                      <div>
-                        <p className="uppercase">EXP</p>
-                        <p className="text-white font-mono">09/29</p>
-                      </div>
-                      <div>
-                        <p className="uppercase">CVV</p>
-                        <p className="text-white font-mono">611</p>
-                      </div>
+                          <div className="flex justify-between items-center text-[11px] text-slate-500 font-medium pt-0.5">
+                            <span>Lender: {debt.lender} {debt.note ? `(${debt.note})` : ""}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setCategoryId(debt.id);
+                                if (debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
+                                setShowSpendModal(true);
+                              }}
+                              className="text-[#ff5c38] font-extrabold hover:underline"
+                            >
+                              {debt.isCleared ? "Logged" : "+ Pay & Log"}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Orange Card (Finexy Exact Style) */}
-                  <div className="rounded-2xl bg-[#ff5c38] text-white p-4 space-y-3 shadow-md">
-                    <div className="flex justify-between items-center text-xs">
-                      <span className="font-mono text-[10px] text-orange-200">(((•)))</span>
-                      <Chip color="success" size="sm" variant="soft">Active</Chip>
-                    </div>
-                    <p className="font-mono text-xs font-extrabold tracking-widest text-orange-100">**** **** 4356</p>
-                    <div className="flex justify-between text-[10px] text-orange-200 pt-1 border-t border-white/20">
-                      <div>
-                        <p className="uppercase">Card Number</p>
-                        <p className="text-white font-mono">**** 4356</p>
+                  {/* Recent Activities Data Table */}
+                  <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                      <h3 className="text-base font-extrabold text-slate-900">Recent Transactions</h3>
+
+                      <div className="flex items-center gap-2">
+                        <div className="relative">
+                          <Search className="absolute left-3 top-2.5 size-3.5 text-slate-400" />
+                          <input
+                            placeholder="Search..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="h-8 pl-8 pr-3 text-xs bg-slate-100 border border-slate-200/80 rounded-full w-36 sm:w-44 focus:outline-none"
+                          />
+                        </div>
+
+                        <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full border border-slate-200/80 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => setSpendListFilter("all")}
+                            className={cn(
+                              "px-2.5 py-0.5 text-[11px] font-extrabold rounded-full transition-all",
+                              spendListFilter === "all" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600",
+                            )}
+                          >
+                            All
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setSpendListFilter("today")}
+                            className={cn(
+                              "px-2.5 py-0.5 text-[11px] font-extrabold rounded-full transition-all",
+                              spendListFilter === "today" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600",
+                            )}
+                          >
+                            Today
+                          </button>
+                        </div>
                       </div>
-                      <div>
-                        <p className="uppercase">EXP</p>
-                        <p className="text-white font-mono">11/28</p>
-                      </div>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Right 8 Cols: Recent Activities Table (Finexy Exact Layout) */}
-            <div className="lg:col-span-8 rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <h3 className="text-lg font-extrabold text-slate-900">Recent Activities</h3>
-
-                {/* Filter & Search Toolbar */}
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-2.5 size-3.5 text-slate-400" />
-                    <input
-                      placeholder="Search"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-8 pl-8 pr-3 text-xs bg-slate-100 border border-slate-200/80 rounded-full w-36 sm:w-44 focus:outline-none"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    className="h-8 px-3 text-xs font-extrabold bg-slate-100 border border-slate-200/80 rounded-full flex items-center gap-1.5 text-slate-700 hover:bg-slate-200"
-                  >
-                    <Filter className="size-3" /> Filter =
-                  </button>
-                </div>
-              </div>
-
-              {/* Data Table */}
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-slate-400 font-extrabold pb-2">
-                      <th className="pb-2 pl-2 w-8"><input type="checkbox" className="rounded" /></th>
-                      <th className="pb-2">Order ID</th>
-                      <th className="pb-2">Activity</th>
-                      <th className="pb-2">Price</th>
-                      <th className="pb-2">Status</th>
-                      <th className="pb-2">Date</th>
-                      <th className="pb-2 pr-2 text-right">Action</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {filteredEntries.length === 0 ? (
-                      <tr>
-                        <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
-                          No recent transactions found. Tap "⇆ Transfer" to log spends.
-                        </td>
-                      </tr>
-                    ) : (
-                      filteredEntries.slice(0, 10).map((entry, idx) => {
-                        const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
-                        const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
-                        const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
-                        const orderId = `INV_0000${76 - idx}`;
-
-                        const iconObj = categoryOptions.find((c) => c.id === entry.categoryId);
-                        const IconComponent = iconObj?.icon || Wallet;
-
-                        return (
-                          <tr key={entry.id} className="hover:bg-slate-50/80 transition-all font-semibold">
-                            <td className="py-3 pl-2"><input type="checkbox" className="rounded" /></td>
-                            <td className="py-3 font-mono font-bold text-slate-500">{orderId}</td>
-                            <td className="py-3">
-                              <div className="flex items-center gap-2.5">
-                                <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0", iconObj?.color || "bg-sky-50 text-sky-600")}>
-                                  <IconComponent className="size-3.5" />
-                                </div>
-                                <span className="font-extrabold text-slate-900">{displayName}</span>
-                              </div>
-                            </td>
-                            <td className="py-3 font-mono font-black text-slate-900">{formatInr(entry.amount)}</td>
-                            <td className="py-3">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 bg-emerald-50">
-                                <span className="size-1.5 rounded-full bg-emerald-500" /> Completed
-                              </span>
-                            </td>
-                            <td className="py-3 text-slate-500 font-mono text-[11px]">{entry.date}</td>
-                            <td className="py-3 pr-2 text-right">
-                              <button
-                                type="button"
-                                onClick={() => startEditingEntry(entry)}
-                                className="p-1 text-slate-400 hover:text-slate-700"
-                              >
-                                <MoreHorizontal className="size-4" />
-                              </button>
-                            </td>
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs">
+                        <thead>
+                          <tr className="border-b border-slate-100 text-slate-400 font-extrabold pb-2">
+                            <th className="pb-2">ID</th>
+                            <th className="pb-2">Activity / Note</th>
+                            <th className="pb-2">Method</th>
+                            <th className="pb-2">Amount</th>
+                            <th className="pb-2">Status</th>
+                            <th className="pb-2">Date</th>
+                            <th className="pb-2 pr-2 text-right">Action</th>
                           </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {filteredEntries.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
+                                No logged spends found. Tap "+ Log Spend" to record transaction.
+                              </td>
+                            </tr>
+                          ) : (
+                            filteredEntries.slice(0, 12).map((entry, idx) => {
+                              const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
+                              const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
+                              const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
+                              const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
+                              const orderId = `INV_00${80 - idx}`;
+
+                              const iconObj = categoryOptions.find((c) => c.id === entry.categoryId);
+                              const IconComponent = iconObj?.icon || Wallet;
+
+                              return (
+                                <tr key={entry.id} className="hover:bg-slate-50/80 transition-all font-semibold">
+                                  <td className="py-3 font-mono font-bold text-slate-400 text-[11px]">{orderId}</td>
+                                  <td className="py-3">
+                                    <div className="flex items-center gap-2.5">
+                                      <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0", iconObj?.color || "bg-sky-50 text-sky-600")}>
+                                        <IconComponent className="size-3.5" />
+                                      </div>
+                                      <span className="font-extrabold text-slate-900">{displayName}</span>
+                                    </div>
+                                  </td>
+                                  <td className="py-3 text-slate-600 font-medium">{method}</td>
+                                  <td className="py-3 font-mono font-black text-slate-900">{formatInr(entry.amount)}</td>
+                                  <td className="py-3">
+                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 bg-emerald-50">
+                                      <span className="size-1.5 rounded-full bg-emerald-500" /> Completed
+                                    </span>
+                                  </td>
+                                  <td className="py-3 text-slate-500 font-mono text-[11px]">{entry.date}</td>
+                                  <td className="py-3 pr-2 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => startEditingEntry(entry)}
+                                      className="p-1 text-slate-400 hover:text-slate-700"
+                                    >
+                                      <Pencil className="size-3.5" />
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right 4 Cols: Cards & Pace Widget */}
+                <div className="lg:col-span-4 space-y-6">
+                  {/* My Credit Cards Widget */}
+                  <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-extrabold text-slate-900">My Credit Cards</h3>
+                      <span className="text-xs font-bold text-slate-400">Limits</span>
+                    </div>
+
+                    <div className="space-y-3">
+                      <div className="rounded-2xl bg-[#18181b] text-white p-4 space-y-3 shadow-md">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-extrabold tracking-wider text-slate-300">HDFC Millennia</span>
+                          <Chip color="success" size="sm" variant="soft">Active</Chip>
+                        </div>
+                        <p className="font-mono text-xs font-extrabold tracking-widest text-slate-300">•••• •••• 6782</p>
+                        <div className="flex justify-between items-end text-xs pt-1 border-t border-slate-800">
+                          <div>
+                            <p className="text-[10px] text-slate-400 uppercase font-bold">Used</p>
+                            <p className="font-mono font-bold text-white">₹0</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-slate-400 uppercase font-bold">Limit</p>
+                            <p className="font-mono font-bold text-white">₹75,000</p>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="rounded-2xl bg-[#ff5c38] text-white p-4 space-y-3 shadow-md">
+                        <div className="flex justify-between items-center text-xs">
+                          <span className="font-extrabold tracking-wider text-orange-100">Axis MyZone</span>
+                          <Chip color="success" size="sm" variant="soft">Active</Chip>
+                        </div>
+                        <p className="font-mono text-xs font-extrabold tracking-widest text-orange-100">•••• •••• 4356</p>
+                        <div className="flex justify-between items-end text-xs pt-1 border-t border-white/20">
+                          <div>
+                            <p className="text-[10px] text-orange-100 uppercase font-bold">Used</p>
+                            <p className="font-mono font-bold text-white">₹0</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-[10px] text-orange-100 uppercase font-bold">Limit</p>
+                            <p className="font-mono font-bold text-white">₹50,000</p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Budget Pace Widget */}
+                  <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
+                      <Chip color={pace.status === "green" ? "success" : pace.status === "yellow" ? "warning" : "danger"} size="sm" variant="soft">
+                        {pace.status === "green" ? "Safe" : "Warning"}
+                      </Chip>
+                    </div>
+                    <p className="text-xs font-medium text-slate-500">{pace.message}</p>
+
+                    <div className="space-y-3 pt-1">
+                      <div>
+                        <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
+                          <span>Variable Spend ({dayOfMonth}/30 days)</span>
+                          <span className="font-mono font-black text-slate-900">
+                            {formatInr(variableSpent)} / {formatInr(variableBudget)}
+                          </span>
+                        </div>
+                        <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                          <p className="text-slate-500 font-bold">Allowed Today</p>
+                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                        </div>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                          <p className="text-slate-500 font-bold">Projected End</p>
+                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* TAB 2: OVERVIEW & PLAN */}
+          {activeTab === "plan" && (
+            <div className="space-y-6">
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
+                <h3 className="text-xl font-extrabold text-slate-900">Income Sources for {formatMonthLabel(selectedMonth)}</h3>
+                <div className="space-y-2">
+                  {currentIncomes.map((source) => (
+                    <div key={source.id} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">{source.name}</p>
+                        <p className="text-xs text-slate-500">{source.expectedDate}</p>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="font-mono text-base font-black text-slate-900">{formatInr(source.amount)}</span>
+                        <Button
+                          size="sm"
+                          variant={source.status === "received" ? "secondary" : "outline"}
+                          className={cn("text-xs font-bold", source.status === "received" ? "bg-emerald-100 text-emerald-800" : "border-slate-300 text-amber-700")}
+                          onPress={() => toggleIncomeStatus(source.id)}
+                        >
+                          {source.status === "received" ? "Received ✓" : "Expected"}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Zero-EMI Forecast Preview Roadmap */}
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <h3 className="text-xl font-extrabold text-slate-900">Zero-EMI Trajectory Roadmap</h3>
+                <p className="text-xs text-slate-500">Target zero EMI debt clearance by May 2028</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                  {monthPreviews.slice(0, 6).map((prev) => (
+                    <div key={prev.month} className="rounded-2xl border border-slate-200 p-4 bg-slate-50/60 space-y-1">
+                      <p className="text-xs font-black text-slate-900">{formatMonthLabel(prev.month)}</p>
+                      <p className="text-xs font-mono font-bold text-slate-700">EMI: {formatInr(prev.emisGoingOut)}</p>
+                      <p className="text-[11px] text-emerald-600 font-semibold">Surplus: {formatInr(prev.youKeepThisMonth)}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 3: INVEST */}
+          {activeTab === "invest" && (
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
+              <h3 className="text-xl font-extrabold text-slate-900">Investment Strategy for {formatMonthLabel(selectedMonth)}</h3>
+              <p className="text-xs text-slate-500">Recommended allocation of monthly surplus cash above ₹5,000 buffer</p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+                <div className="rounded-2xl border border-slate-200 p-4 bg-emerald-50/50 space-y-2">
+                  <p className="text-xs font-extrabold text-emerald-800">Liquid Emergency Reserve</p>
+                  <p className="font-mono text-2xl font-black text-emerald-900">{formatInr(investmentPlan.liquidFundAmount)}</p>
+                  <p className="text-xs text-emerald-700 font-medium">{investmentPlan.liquidFundName}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 p-4 bg-sky-50/50 space-y-2">
+                  <p className="text-xs font-extrabold text-sky-800">Mutual Funds / SIP</p>
+                  <p className="font-mono text-2xl font-black text-sky-900">{formatInr(investmentPlan.niftyIndexFundAmount)}</p>
+                  <p className="text-xs text-sky-700 font-medium">{investmentPlan.niftyIndexFundName}</p>
+                </div>
+                <div className="rounded-2xl border border-slate-200 p-4 bg-amber-50/50 space-y-2">
+                  <p className="text-xs font-extrabold text-amber-800">Flexi Cap SIP</p>
+                  <p className="font-mono text-2xl font-black text-amber-900">{formatInr(investmentPlan.flexiCapFundAmount)}</p>
+                  <p className="text-xs text-amber-700 font-medium">{investmentPlan.flexiCapFundName}</p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 4: EMIS */}
+          {activeTab === "emis" && (
+            <div className="space-y-6">
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <h3 className="text-xl font-extrabold text-slate-900">Personal EMIs ({currentPersonalEmis.length})</h3>
+                <div className="space-y-2">
+                  {currentPersonalEmis.map((emi) => (
+                    <div key={emi.id} className="flex justify-between items-center p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">{emi.name}</p>
+                        <p className="text-xs text-slate-500">Matures: {emi.ends}</p>
+                      </div>
+                      <span className="font-mono text-base font-black text-slate-900">{formatInr(emi.amount)}/mo</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <h3 className="text-xl font-extrabold text-slate-900">Venkat Payable EMIs ({currentVenkatPayableEmis.length})</h3>
+                <div className="space-y-2">
+                  {currentVenkatPayableEmis.map((emi) => (
+                    <div key={emi.id} className="flex justify-between items-center p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">{emi.name} (to Venkat)</p>
+                        <p className="text-xs text-slate-500">Matures: {emi.ends}</p>
+                      </div>
+                      <span className="font-mono text-base font-black text-slate-900">{formatInr(emi.amount)}/mo</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* TAB 5: CARDS */}
+          {activeTab === "cards" && (
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-6">
+              <h3 className="text-xl font-extrabold text-slate-900">Credit Cards & Usage Limits</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div className="rounded-2xl bg-[#18181b] text-white p-6 space-y-4 shadow-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-extrabold text-slate-300">HDFC Millennia Credit Card</span>
+                    <Chip color="success" size="sm">Active</Chip>
+                  </div>
+                  <p className="font-mono text-xl font-black tracking-widest text-slate-200">•••• •••• •••• 6782</p>
+                  <div className="flex justify-between items-end border-t border-slate-800 pt-3 text-xs">
+                    <div>
+                      <p className="text-slate-400">Total Credit Limit</p>
+                      <p className="font-mono font-bold text-white text-base">₹75,000</p>
+                    </div>
+                    <div>
+                      <p className="text-slate-400">Due Status</p>
+                      <p className="font-bold text-emerald-400">No Dues Pending</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-2xl bg-[#ff5c38] text-white p-6 space-y-4 shadow-lg">
+                  <div className="flex justify-between items-center">
+                    <span className="font-extrabold text-orange-100">Axis MyZone Credit Card</span>
+                    <Chip color="success" size="sm">Active</Chip>
+                  </div>
+                  <p className="font-mono text-xl font-black tracking-widest text-orange-100">•••• •••• •••• 4356</p>
+                  <div className="flex justify-between items-end border-t border-white/20 pt-3 text-xs">
+                    <div>
+                      <p className="text-orange-200">Total Credit Limit</p>
+                      <p className="font-mono font-bold text-white text-base">₹50,000</p>
+                    </div>
+                    <div>
+                      <p className="text-orange-200">Due Status</p>
+                      <p className="font-bold text-white">No Dues Pending</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>
