@@ -1683,7 +1683,7 @@ export function SafeSpendApp() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
                   <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
                     <p className="text-xs font-extrabold text-slate-500 uppercase">Axis Bank (3 Cards Shared)</p>
-                    <p className="text-lg font-mono font-black text-slate-900 mt-0.5">₹5,035 spent out of ₹15,000</p>
+                    <p className="text-lg font-mono font-black text-slate-900 mt-0.5">₹10,346 spent out of ₹15,000</p>
                   </div>
                   <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
                     <p className="text-xs font-extrabold text-slate-500 uppercase">HDFC Bank (3 Cards Shared)</p>
