@@ -59,6 +59,7 @@ import {
   addMonthsToDate,
   calculateMonthlyPlan,
   calculateSafeSpendPace,
+  factualBankCardGroups,
   formatInr,
   formatMonthLabel,
   getActiveEmisForMonth,
@@ -87,6 +88,21 @@ const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string }> = [
   { id: "axis", label: "Axis Card" },
   { id: "yes-bank", label: "YES Bank Card" },
 ];
+
+// All 8 Factual Credit Cards flattened for quick dropdown selection
+const allFactualCreditCards = factualBankCardGroups.flatMap((group) =>
+  group.cards.map((card) => ({
+    id: card.id,
+    name: card.name,
+    bankName: group.bankName,
+    bankKey: group.bankName.includes("Axis")
+      ? ("axis" as const)
+      : group.bankName.includes("HDFC")
+      ? ("hdfc" as const)
+      : ("yes-bank" as const),
+    brandTag: card.brandTag,
+  })),
+);
 
 const categoryOptions = [
   { id: "groceries", label: "Groceries & Daily Needs", icon: ShoppingBag, budget: "₹3,000/mo", color: "text-amber-600 bg-amber-50" },
@@ -195,6 +211,7 @@ export function SafeSpendApp() {
   const [amount, setAmount] = useState("");
   const [categoryId, setCategoryId] = useState("groceries");
   const [paidBy, setPaidBy] = useState<SpendEntry["paidBy"]>("upi");
+  const [selectedCardId, setSelectedCardId] = useState<string>("axis-flipkart");
   const [note, setNote] = useState("");
   const [spendDate, setSpendDate] = useState<string>(() => getLocalDateString());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
@@ -236,65 +253,62 @@ export function SafeSpendApp() {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
 
-  // DYNAMICALLY SYNC CREDIT CARD SPENDS FROM LOGGED ENTRIES
-  const axisLoggedSpends = useMemo(
-    () => entries.filter((e) => e.paidBy === "axis").reduce((sum, e) => sum + e.amount, 0),
-    [entries],
-  );
-  const hdfcLoggedSpends = useMemo(
-    () => entries.filter((e) => e.paidBy === "hdfc").reduce((sum, e) => sum + e.amount, 0),
-    [entries],
-  );
-  const yesBankLoggedSpends = useMemo(
-    () => entries.filter((e) => e.paidBy === "yes-bank").reduce((sum, e) => sum + e.amount, 0),
-    [entries],
-  );
+  // Dynamically auto-assign default card when switching payment method to a card
+  useEffect(() => {
+    if (paidBy === "axis" && !selectedCardId.startsWith("axis")) {
+      setSelectedCardId("axis-flipkart");
+    } else if (paidBy === "hdfc" && !selectedCardId.startsWith("hdfc")) {
+      setSelectedCardId("hdfc-phonepe");
+    } else if (paidBy === "yes-bank" && !selectedCardId.startsWith("yes")) {
+      setSelectedCardId("yes-uni-gold");
+    }
+  }, [paidBy, selectedCardId]);
 
-  // Dynamic Card Groups with Synced Spends
+  // CARD-WISE SPEND CALCULATION MAP FROM LOGGED ENTRIES
+  const cardSpendsMap = useMemo(() => {
+    const map: Record<string, number> = {};
+    entries.forEach((e) => {
+      if (e.cardId) {
+        map[e.cardId] = (map[e.cardId] || 0) + e.amount;
+      } else if (e.paidBy === "axis") {
+        map["axis-flipkart"] = (map["axis-flipkart"] || 0) + e.amount;
+      } else if (e.paidBy === "hdfc") {
+        map["hdfc-phonepe"] = (map["hdfc-phonepe"] || 0) + e.amount;
+      } else if (e.paidBy === "yes-bank") {
+        map["yes-uni-gold"] = (map["yes-uni-gold"] || 0) + e.amount;
+      }
+    });
+    return map;
+  }, [entries]);
+
+  // Dynamic Card Groups with Individual Card Spends and Shared Limits Auto-Synced
   const dynamicBankCardGroups = useMemo(() => {
-    return [
-      {
-        bankName: "Axis Bank Cards Group",
-        sharedLimit: 15000,
-        baseSpend: 10345.60,
-        additionalLoggedSpend: axisLoggedSpends,
-        totalOutstandingSpend: 10345.60 + axisLoggedSpends,
-        gradientStyle: "bg-gradient-to-br from-[#590016] via-[#800020] to-[#a30029]",
-        cards: [
-          { name: "Axis Bank Indian Oil", brandTag: "Indian Oil Fuel (....7380)", spendAmount: 5310.40, sinceDate: "20 Aug" },
-          { name: "Axis Bank Flipkart", brandTag: "Flipkart Co-Branded (....9691)", spendAmount: 4688.00 + axisLoggedSpends, sinceDate: "14 Aug" },
-          { name: "Axis Bank MyZone", brandTag: "MyZone Rewards (....6415)", spendAmount: 347.20, sinceDate: "15 Aug" },
-        ],
-      },
-      {
-        bankName: "HDFC Bank Cards Group",
-        sharedLimit: 40000,
-        baseSpend: 10601.11,
-        additionalLoggedSpend: hdfcLoggedSpends,
-        totalOutstandingSpend: 10601.11 + hdfcLoggedSpends,
-        gradientStyle: "bg-gradient-to-br from-[#041220] via-[#0A2540] to-[#143d66]",
-        cards: [
-          { name: "HDFC PhonePe / PayZapp", brandTag: "PhonePe Cashbacks (....8020)", spendAmount: 10601.11 + hdfcLoggedSpends, sinceDate: "12 Aug" },
-          { name: "Tata Neu HDFC Card", brandTag: "Tata Neu Plus (....7192)", spendAmount: 0.00, sinceDate: "11 Aug" },
-          { name: "HDFC RuPay Credit Card", brandTag: "UPI RuPay Link (....6666)", spendAmount: 0.00, sinceDate: "12 Aug" },
-        ],
-      },
-      {
-        bankName: "YES Bank (Uni Cards Group)",
-        sharedLimit: 27000,
-        baseSpend: 1640.00,
-        additionalLoggedSpend: yesBankLoggedSpends,
-        totalOutstandingSpend: 1640.00 + yesBankLoggedSpends,
-        gradientStyle: "bg-gradient-to-br from-[#004f73] via-[#0077B6] to-[#009bc2]",
-        cards: [
-          { name: "Uni X Gold (YES Bank)", brandTag: "Uni Gold Edition (....0976)", spendAmount: 1640.00 + yesBankLoggedSpends, sinceDate: "12 Aug" },
-          { name: "Uni RuPay Card (YES Bank)", brandTag: "Uni RuPay UPI (....5456)", spendAmount: 0.00, sinceDate: "12 Aug" },
-        ],
-      },
-    ];
-  }, [axisLoggedSpends, hdfcLoggedSpends, yesBankLoggedSpends]);
+    return factualBankCardGroups.map((group) => {
+      const cardsWithSyncedSpends = group.cards.map((card) => {
+        const addedSpend = cardSpendsMap[card.id] || 0;
+        return {
+          ...card,
+          addedSpend,
+          spendAmount: card.spendAmount + addedSpend,
+        };
+      });
 
-  // Real-time total synced credit card dues
+      const totalGroupSpend = cardsWithSyncedSpends.reduce((sum, c) => sum + c.spendAmount, 0);
+
+      return {
+        ...group,
+        totalOutstandingSpend: totalGroupSpend,
+        cards: cardsWithSyncedSpends,
+        gradientStyle: group.bankName.includes("Axis")
+          ? "bg-gradient-to-br from-[#590016] via-[#800020] to-[#a30029]"
+          : group.bankName.includes("HDFC")
+          ? "bg-gradient-to-br from-[#041220] via-[#0A2540] to-[#143d66]"
+          : "bg-gradient-to-br from-[#004f73] via-[#0077B6] to-[#009bc2]",
+      };
+    });
+  }, [cardSpendsMap]);
+
+  // Real-time total synced credit card dues across all 8 cards
   const totalCreditCardDues = useMemo(
     () => dynamicBankCardGroups.reduce((sum, g) => sum + g.totalOutstandingSpend, 0),
     [dynamicBankCardGroups],
@@ -361,7 +375,7 @@ export function SafeSpendApp() {
 
   const isInitialCleanupMonth = selectedMonth === "2026-09";
   
-  // September Credit Card Bill dynamically synced with logged card spends
+  // Credit Card Bill dynamically synced with logged card spends
   const creditCardBill = useMemo(() => {
     if (monthlyCardBills[selectedMonth] !== undefined) {
       return monthlyCardBills[selectedMonth];
@@ -553,7 +567,8 @@ export function SafeSpendApp() {
           e.note?.toLowerCase().includes(q) ||
           e.amount.toString().includes(q) ||
           e.date.includes(q) ||
-          e.paidBy.toLowerCase().includes(q),
+          e.paidBy.toLowerCase().includes(q) ||
+          (e.cardId && e.cardId.toLowerCase().includes(q)),
       );
     }
 
@@ -634,6 +649,7 @@ export function SafeSpendApp() {
     setAmount(String(entry.amount));
     setCategoryId(entry.categoryId);
     setPaidBy(entry.paidBy);
+    setSelectedCardId(entry.cardId || "axis-flipkart");
     setNote(entry.note ?? "");
     setSpendDate(entry.date);
     setShowSpendModal(true);
@@ -651,6 +667,8 @@ export function SafeSpendApp() {
     const todayStr = getLocalDateString();
     const targetDate = spendDate && spendDate <= todayStr ? spendDate : todayStr;
 
+    const isCreditCardPayment = paidBy === "hdfc" || paidBy === "axis" || paidBy === "yes-bank";
+
     if (editingEntryId) {
       setEntries((current) =>
         current.map((item) =>
@@ -661,6 +679,7 @@ export function SafeSpendApp() {
                 amount: Math.round(parsedAmount),
                 categoryId,
                 paidBy,
+                cardId: isCreditCardPayment ? selectedCardId : undefined,
                 note: note.trim() || undefined,
               }
             : item,
@@ -674,6 +693,7 @@ export function SafeSpendApp() {
         amount: Math.round(parsedAmount),
         categoryId,
         paidBy,
+        cardId: isCreditCardPayment ? selectedCardId : undefined,
         note: note.trim() || undefined,
       };
       setEntries((current) => [entry, ...current]);
@@ -723,6 +743,20 @@ export function SafeSpendApp() {
     { id: "emis", label: "EMIs & Debt Ledger", icon: CreditCardIcon },
     { id: "cards", label: "Credit Cards", icon: Wallet },
   ] as const;
+
+  // Filter available specific credit cards based on selected payment method bank
+  const availableCardOptions = useMemo(() => {
+    if (paidBy === "axis") {
+      return allFactualCreditCards.filter((c) => c.bankKey === "axis");
+    }
+    if (paidBy === "hdfc") {
+      return allFactualCreditCards.filter((c) => c.bankKey === "hdfc");
+    }
+    if (paidBy === "yes-bank") {
+      return allFactualCreditCards.filter((c) => c.bankKey === "yes-bank");
+    }
+    return allFactualCreditCards;
+  }, [paidBy]);
 
   return (
     <div className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans flex flex-col lg:flex-row">
@@ -1075,7 +1109,7 @@ export function SafeSpendApp() {
           </div>
         )}
 
-        {/* QUICK SPEND MODAL OVERLAY */}
+        {/* QUICK SPEND MODAL OVERLAY (WITH SPECIFIC CREDIT CARD SELECTION) */}
         {showSpendModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
             <div className="fixed inset-0" onClick={() => setShowSpendModal(false)} />
@@ -1137,8 +1171,9 @@ export function SafeSpendApp() {
                   </select>
                 </div>
 
+                {/* PAYMENT METHOD SELECTOR */}
                 <div className="space-y-1.5">
-                  <label className="text-xs font-extrabold text-slate-700 block">Payment Method (Auto-Syncs Card Dues)</label>
+                  <label className="text-xs font-extrabold text-slate-700 block">Payment Method</label>
                   <div className="flex flex-wrap gap-1.5 bg-slate-100 p-1.5 rounded-2xl border border-slate-200">
                     {paymentMethods.map((method) => {
                       const isSelected = paidBy === method.id;
@@ -1159,11 +1194,35 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
+                {/* SPECIFIC CREDIT CARD SELECTION (ASKED WHEN A CREDIT CARD IS SELECTED) */}
+                {(paidBy === "axis" || paidBy === "hdfc" || paidBy === "yes-bank") && (
+                  <div className="space-y-1.5 bg-orange-50/60 p-3.5 rounded-2xl border border-orange-200/80">
+                    <label htmlFor="specific-card-select" className="text-xs font-extrabold text-[#D96653] flex items-center gap-1.5">
+                      <CreditCardIcon className="size-3.5" /> Select Specific Credit Card to Charge:
+                    </label>
+                    <select
+                      id="specific-card-select"
+                      value={selectedCardId}
+                      onChange={(e) => setSelectedCardId(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs font-bold text-slate-900 rounded-xl h-10 px-3 focus:outline-none focus:ring-2 focus:ring-[#D96653] cursor-pointer"
+                    >
+                      {availableCardOptions.map((card) => (
+                        <option key={card.id} value={card.id}>
+                          💳 {card.name} ({card.brandTag})
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-[10px] text-slate-500 font-medium">
+                      Spend will be logged under this card, updating its specific card usage & group limit in real-time.
+                    </p>
+                  </div>
+                )}
+
                 <div className="space-y-1.5">
                   <label htmlFor="quick-modal-note" className="text-xs font-extrabold text-slate-700 block">Note (Optional)</label>
                   <input
                     id="quick-modal-note"
-                    placeholder="e.g. Grocery purchase..."
+                    placeholder="e.g. Fuel, grocery purchase..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
@@ -1367,7 +1426,7 @@ export function SafeSpendApp() {
                     </div>
                   </div>
 
-                  {/* Recent Activities Data Table */}
+                  {/* Recent Activities Data Table (WITH SPECIFIC CREDIT CARD BADGE) */}
                   <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                       <h3 className="text-base font-extrabold text-slate-900">Recent Transactions</h3>
@@ -1414,7 +1473,7 @@ export function SafeSpendApp() {
                           <tr className="border-b border-slate-100 text-slate-400 font-extrabold pb-2">
                             <th className="pb-2">ID</th>
                             <th className="pb-2">Activity / Note</th>
-                            <th className="pb-2">Method</th>
+                            <th className="pb-2">Method & Card</th>
                             <th className="pb-2">Amount</th>
                             <th className="pb-2">Status</th>
                             <th className="pb-2">Date</th>
@@ -1432,7 +1491,8 @@ export function SafeSpendApp() {
                             filteredEntries.slice(0, 12).map((entry, idx) => {
                               const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
                               const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
-                              const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
+                              const methodLabel = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
+                              const matchedCard = allFactualCreditCards.find((c) => c.id === entry.cardId);
                               const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
                               const orderId = `INV_00${80 - idx}`;
 
@@ -1450,7 +1510,16 @@ export function SafeSpendApp() {
                                       <span className="font-extrabold text-slate-900">{displayName}</span>
                                     </div>
                                   </td>
-                                  <td className="py-3 text-slate-600 font-medium">{method}</td>
+                                  <td className="py-3 text-slate-600 font-medium">
+                                    <div className="flex flex-col">
+                                      <span>{methodLabel}</span>
+                                      {matchedCard && (
+                                        <span className="text-[10px] text-[#D96653] font-bold">
+                                          💳 {matchedCard.name.replace("Axis Bank ", "").replace("HDFC ", "")}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </td>
                                   <td className="py-3 font-mono font-black text-slate-900">{formatInr(entry.amount)}</td>
                                   <td className="py-3">
                                     <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 bg-emerald-50">
@@ -1495,7 +1564,7 @@ export function SafeSpendApp() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="text-base font-extrabold text-slate-900">Credit Cards Summary</h3>
-                        <p className="text-[11px] text-slate-400 font-semibold">8 Cards · Live Synced Spends</p>
+                        <p className="text-[11px] text-slate-400 font-semibold">8 Cards · Card-Level Auto Sync</p>
                       </div>
                       <Chip color="danger" size="sm" variant="soft">
                         Due: {formatInr(totalCreditCardDues)}
@@ -1519,9 +1588,9 @@ export function SafeSpendApp() {
                           <div className="flex justify-between items-end border-t border-white/20 pt-2 text-xs">
                             <div>
                               <p className="text-[9px] uppercase font-bold text-slate-200">Limit: {formatInr(group.sharedLimit)}</p>
-                              {group.additionalLoggedSpend > 0 && (
-                                <p className="text-[9px] font-bold text-emerald-300">+ {formatInr(group.additionalLoggedSpend)} new spend</p>
-                              )}
+                              <p className="text-[10px] font-bold text-emerald-300">
+                                Avail: {formatInr(group.sharedLimit - group.totalOutstandingSpend)}
+                              </p>
                             </div>
                             <div className="text-right">
                               <p className="text-[9px] uppercase font-bold text-slate-200">Total Outstanding</p>
@@ -1800,7 +1869,7 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (PURE CSS CREDIT CARD UI DESIGN + AUTO-SYNCED SPENDS) */}
+          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (CARD-LEVEL SPEND TRACKING & LIMITS UPDATE) */}
           {activeTab === "cards" && (
             <div className="space-y-6">
               {/* Grand Summary Badge Header */}
@@ -1808,7 +1877,7 @@ export function SafeSpendApp() {
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
                     <h3 className="text-2xl font-black text-slate-900">Credit Cards & Shared Limits</h3>
-                    <p className="text-xs text-slate-400 font-medium">8 Total Cards · Spends Auto-Sync in Real-Time when logged</p>
+                    <p className="text-xs text-slate-400 font-medium">8 Total Cards · Card-Specific Spends & Shared Limits Auto-Synced</p>
                   </div>
                   <div className="flex items-center gap-3">
                     <div className="text-right">
@@ -1829,12 +1898,15 @@ export function SafeSpendApp() {
                       <p className="text-lg font-mono font-black text-slate-900 mt-0.5">
                         {formatInr(g.totalOutstandingSpend)} spent / {formatInr(g.sharedLimit)}
                       </p>
+                      <p className="text-[11px] font-bold text-emerald-600">
+                        Available Limit: {formatInr(g.sharedLimit - g.totalOutstandingSpend)}
+                      </p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              {/* PURE HANDCRAFTED CSS CREDIT CARD UI CARDS (NO IMAGE OVERLAPS!) */}
+              {/* PURE HANDCRAFTED CSS CREDIT CARD UI CARDS (WITH CARD-SPECIFIC SPENDS TRACKING) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {dynamicBankCardGroups.map((group) => (
                   <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
@@ -1895,18 +1967,25 @@ export function SafeSpendApp() {
                         </div>
                       </div>
 
-                      {/* Individual Cards List in Group */}
+                      {/* Individual Cards List in Group (With Card-Specific Logged Spends) */}
                       <div className="space-y-2 pt-1">
                         <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">Individual Card Spends</p>
                         {group.cards.map((card) => (
-                          <div key={card.name} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition-all">
+                          <div key={card.id} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition-all">
                             <div>
                               <p className="font-extrabold text-slate-900 text-xs">{card.name}</p>
                               <p className="text-[10px] text-slate-400 font-semibold">{card.brandTag} · since {card.sinceDate}</p>
+                              {card.addedSpend > 0 && (
+                                <p className="text-[10px] font-extrabold text-emerald-600 mt-0.5">
+                                  + {formatInr(card.addedSpend)} logged spend
+                                </p>
+                              )}
                             </div>
-                            <span className="font-mono text-xs font-black text-slate-900">
-                              {card.spendAmount > 0 ? formatInr(card.spendAmount) : "₹0"}
-                            </span>
+                            <div className="text-right">
+                              <span className="font-mono text-xs font-black text-slate-900 block">
+                                {card.spendAmount > 0 ? formatInr(card.spendAmount) : "₹0"}
+                              </span>
+                            </div>
                           </div>
                         ))}
                       </div>
