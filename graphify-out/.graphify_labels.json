@@ -1,0 +1,19 @@
+{
+  "0": "cn",
+  "1": "safe-spend-app.tsx",
+  "2": "compilerOptions",
+  "3": "components.json",
+  "4": "dependencies",
+  "5": "devDependencies",
+  "6": "finance.ts",
+  "7": "dialog.tsx",
+  "8": "package.json",
+  "9": "layout.tsx",
+  "10": "README.md",
+  "11": "AGENTS.md",
+  "12": "eslint.config.mjs",
+  "13": "next.config.ts",
+  "14": "postcss.config.mjs",
+  "15": "CLAUDE.md",
+  "16": "vitest.config.mts"
+}
