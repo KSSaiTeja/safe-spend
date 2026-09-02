@@ -25,6 +25,8 @@ import {
   TrendingDown,
   TrendingUp,
   WalletCards,
+  Calendar,
+  Check,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -40,13 +42,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -75,12 +70,21 @@ const BUFFER_SWEEP_KEY = "safe-spend-buffer-sweeps-v1";
 const MONTHLY_CARD_BILL_KEY = "safe-spend-monthly-card-bills-v1";
 const CUSTOM_DEBT_KEY = "safe-spend-custom-debts-v1";
 
-const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string }> = [
-  { id: "upi", label: "UPI" },
-  { id: "cash", label: "Cash" },
-  { id: "hdfc", label: "HDFC card" },
-  { id: "axis", label: "Axis card" },
-  { id: "yes-bank", label: "Yes Bank card" },
+const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string; icon: string }> = [
+  { id: "upi", label: "UPI", icon: "⚡" },
+  { id: "cash", label: "Cash", icon: "💵" },
+  { id: "hdfc", label: "HDFC Card", icon: "💳" },
+  { id: "axis", label: "Axis Card", icon: "💳" },
+  { id: "yes-bank", label: "YES Bank Card", icon: "💳" },
+];
+
+const categoryOptions = [
+  { id: "groceries", label: "Groceries & Daily Needs", icon: "🛒", budget: "₹3,000/mo" },
+  { id: "bike", label: "Bike Fuel & Maintenance", icon: "⛽", budget: "₹3,000/mo" },
+  { id: "gym", label: "Gym & Fitness", icon: "🏋️", budget: "₹2,500/mo" },
+  { id: "rent", label: "Room Rent", icon: "🏠", budget: "₹6,000/mo" },
+  { id: "electricity", label: "Electricity", icon: "⚡", budget: "₹500/mo" },
+  { id: "misc", label: "Miscellaneous Living", icon: "☕", budget: "₹3,000/mo" },
 ];
 
 function loadSpendEntries(): SpendEntry[] {
@@ -156,18 +160,18 @@ function getSeptemberDay() {
 
 function StatusBadge({ status }: { status: "green" | "yellow" | "red" }) {
   const copy = {
-    green: "Safe",
-    yellow: "Careful",
-    red: "Stop",
+    green: "Safe Zone",
+    yellow: "Careful Pace",
+    red: "Pause Non-Essential",
   }[status];
 
   return (
     <Badge
       className={cn(
-        "border px-2.5 py-1 text-xs font-semibold",
-        status === "green" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-        status === "yellow" && "border-amber-500/30 bg-amber-500/10 text-amber-200",
-        status === "red" && "border-red-500/30 bg-red-500/10 text-red-200",
+        "border px-2.5 py-1 text-xs font-bold rounded-lg shadow-xs",
+        status === "green" && "border-emerald-300 bg-emerald-100 text-emerald-800",
+        status === "yellow" && "border-amber-300 bg-amber-100 text-amber-900",
+        status === "red" && "border-rose-300 bg-rose-100 text-rose-800",
       )}
       variant="outline"
     >
@@ -178,20 +182,20 @@ function StatusBadge({ status }: { status: "green" | "yellow" | "red" }) {
 
 function ForecastBadge({ status }: { status: "tight" | "stable" | "free" | "emi-zero" }) {
   const copy = {
-    tight: "Tight",
-    stable: "Stable",
-    free: "Freeing up",
-    "emi-zero": "Zero EMI",
+    tight: "Tight Budget",
+    stable: "Stable Cashflow",
+    free: "Freeing Up",
+    "emi-zero": "Zero EMI Freedom",
   }[status];
 
   return (
     <Badge
       className={cn(
-        "border px-2.5 py-1 text-xs font-semibold",
-        status === "tight" && "border-amber-500/30 bg-amber-500/10 text-amber-200",
-        status === "stable" && "border-sky-500/30 bg-sky-500/10 text-sky-200",
-        status === "free" && "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-        status === "emi-zero" && "border-violet-500/30 bg-violet-500/10 text-violet-200",
+        "border px-2.5 py-1 text-xs font-bold rounded-lg shadow-xs",
+        status === "tight" && "border-amber-300 bg-amber-100 text-amber-900",
+        status === "stable" && "border-sky-300 bg-sky-100 text-sky-900",
+        status === "free" && "border-emerald-300 bg-emerald-100 text-emerald-900",
+        status === "emi-zero" && "border-indigo-300 bg-indigo-100 text-indigo-900",
       )}
       variant="outline"
     >
@@ -211,27 +215,35 @@ function MetricCard({
   value: string;
   detail: string;
   icon: typeof IndianRupee;
-  tone?: "default" | "safe" | "warn" | "danger";
+  tone?: "default" | "safe" | "warn" | "danger" | "info";
 }) {
   return (
-    <Card className="overflow-hidden border-white/10 bg-card/80 shadow-none">
-      <CardContent className="p-4">
+    <Card className={cn(
+      "overflow-hidden border transition-all duration-200 shadow-sm hover:shadow-md rounded-2xl bg-white",
+      tone === "default" && "border-slate-200",
+      tone === "safe" && "border-emerald-200 bg-gradient-to-br from-emerald-50/50 via-white to-white",
+      tone === "warn" && "border-amber-200 bg-gradient-to-br from-amber-50/50 via-white to-white",
+      tone === "danger" && "border-rose-200 bg-gradient-to-br from-rose-50/50 via-white to-white",
+      tone === "info" && "border-sky-200 bg-gradient-to-br from-sky-50/50 via-white to-white",
+    )}>
+      <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-xs text-muted-foreground">{title}</p>
-            <p className="mt-1 text-2xl font-semibold tracking-tight">{value}</p>
-            <p className="mt-1 text-xs leading-5 text-muted-foreground">{detail}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
+            <p className="mt-1 text-2xl font-black tracking-tight text-slate-900">{value}</p>
+            <p className="mt-1 text-xs font-medium text-slate-600 leading-relaxed">{detail}</p>
           </div>
           <div
             className={cn(
-              "rounded-full border p-2",
-              tone === "default" && "border-white/10 bg-muted text-muted-foreground",
-              tone === "safe" && "border-emerald-500/20 bg-emerald-500/10 text-emerald-300",
-              tone === "warn" && "border-amber-500/20 bg-amber-500/10 text-amber-200",
-              tone === "danger" && "border-red-500/20 bg-red-500/10 text-red-200",
+              "rounded-xl border p-2.5 shadow-xs shrink-0",
+              tone === "default" && "border-slate-200 bg-slate-100 text-slate-700",
+              tone === "safe" && "border-emerald-300 bg-emerald-100 text-emerald-700",
+              tone === "warn" && "border-amber-300 bg-amber-100 text-amber-800",
+              tone === "danger" && "border-rose-300 bg-rose-100 text-rose-700",
+              tone === "info" && "border-sky-300 bg-sky-100 text-sky-700",
             )}
           >
-            <Icon className="size-4" />
+            <Icon className="size-5" />
           </div>
         </div>
       </CardContent>
@@ -241,12 +253,12 @@ function MetricCard({
 
 function LineItem({ name, value, helper }: { name: string; value: string; helper?: string }) {
   return (
-    <div className="flex items-start justify-between gap-4 py-2">
+    <div className="flex items-start justify-between gap-4 py-2 border-b border-slate-100 last:border-0">
       <div>
-        <p className="text-sm font-medium">{name}</p>
-        {helper ? <p className="text-xs text-muted-foreground">{helper}</p> : null}
+        <p className="text-sm font-semibold text-slate-800">{name}</p>
+        {helper ? <p className="text-xs text-slate-500 mt-0.5">{helper}</p> : null}
       </div>
-      <p className="shrink-0 font-mono text-sm text-muted-foreground">{value}</p>
+      <p className="shrink-0 font-mono text-sm font-bold text-slate-900">{value}</p>
     </div>
   );
 }
@@ -263,16 +275,16 @@ function BreakdownItem({
   tag?: string;
 }) {
   return (
-    <div className="flex items-center justify-between gap-2 py-1 text-xs">
+    <div className="flex items-center justify-between gap-2 py-1.5 text-xs border-b border-slate-100/70 last:border-0">
       <div className="flex min-w-0 items-center gap-1.5">
-        <span className="text-muted-foreground/60">•</span>
-        <span className="truncate font-medium text-foreground/90">{name}</span>
-        {detail ? <span className="text-[11px] text-muted-foreground">({detail})</span> : null}
+        <span className="text-slate-400">•</span>
+        <span className="truncate font-semibold text-slate-800">{name}</span>
+        {detail ? <span className="text-[11px] text-slate-500">({detail})</span> : null}
         {tag ? (
-          <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground">{tag}</span>
+          <span className="rounded-md bg-slate-100 border border-slate-200 px-1.5 py-0.5 text-[10px] font-semibold text-slate-600">{tag}</span>
         ) : null}
       </div>
-      <span className="shrink-0 font-mono text-muted-foreground">{amount}</span>
+      <span className="shrink-0 font-mono font-bold text-slate-700">{amount}</span>
     </div>
   );
 }
@@ -295,29 +307,29 @@ function BreakdownGroup({
   return (
     <div
       className={cn(
-        "space-y-2.5 rounded-xl border p-3.5",
-        tone === "default" && "border-white/10 bg-muted/20",
-        tone === "safe" && "border-emerald-500/20 bg-emerald-500/5",
-        tone === "warn" && "border-amber-500/20 bg-amber-500/5",
-        tone === "danger" && "border-red-500/20 bg-red-500/5",
-        tone === "info" && "border-sky-500/20 bg-sky-500/5",
+        "space-y-2.5 rounded-2xl border p-4 shadow-xs transition-all",
+        tone === "default" && "border-slate-200 bg-slate-50/80",
+        tone === "safe" && "border-emerald-200 bg-emerald-50/40",
+        tone === "warn" && "border-amber-200 bg-amber-50/40",
+        tone === "danger" && "border-rose-200 bg-rose-50/40",
+        tone === "info" && "border-sky-200 bg-sky-50/40",
       )}
     >
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <p className="text-sm font-semibold text-foreground">{title}</p>
+            <p className="text-sm font-extrabold text-slate-900">{title}</p>
             {badge ? (
-              <Badge className="px-1.5 py-0 text-[10px]" variant="outline">
+              <Badge className="px-2 py-0.5 text-[10px] font-bold bg-white text-slate-700 border-slate-300 shadow-2xs" variant="outline">
                 {badge}
               </Badge>
             ) : null}
           </div>
-          {subtitle ? <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p> : null}
+          {subtitle ? <p className="mt-0.5 text-xs text-slate-500 font-medium">{subtitle}</p> : null}
         </div>
-        <p className="shrink-0 font-mono text-sm font-semibold text-foreground">{total}</p>
+        <p className="shrink-0 font-mono text-base font-black text-slate-900">{total}</p>
       </div>
-      <div className="space-y-1 border-l-2 border-white/15 pl-3 pt-0.5">{children}</div>
+      <div className="space-y-1 border-l-2 border-indigo-500/30 pl-3 pt-0.5">{children}</div>
     </div>
   );
 }
@@ -515,140 +527,111 @@ export function SafeSpendApp() {
         totalAmount: 3724,
         categoryType: "person",
         priority: "high",
-        note: "Settlement of deferred balance",
+        note: "Remaining Venkat balance payoff",
       });
     }
 
-    // 2. Custom User-Added Debts
+    // 2. Custom User Added Debts for Selected Month
     currentCustomDebts.forEach((d) => {
       list.push({
         id: `custom-debt-${d.id}`,
         name: d.name,
         lender: d.lender,
         totalAmount: d.totalAmount,
-        categoryType: d.category === "person" ? "person" : "emi",
+        categoryType: "person",
         priority: d.priority,
         note: d.note,
       });
     });
 
     // 3. Outgoing EMIs
-    currentPersonalEmis.forEach((emi) => {
+    currentPersonalEmis.forEach((e) => {
       list.push({
-        id: `emi-${emi.id}`,
-        name: `${emi.name} (Personal EMI)`,
-        lender: emi.name,
-        totalAmount: emi.amount,
+        id: `emi-personal-${e.id}`,
+        name: `${e.name} EMI`,
+        lender: "Bank/App",
+        totalAmount: e.amount,
         categoryType: "emi",
         priority: "normal",
-        note: `Ends ${emi.ends}`,
+        note: `Ends ${e.ends}`,
       });
     });
 
-    currentVenkatPayableEmis.forEach((emi) => {
+    currentVenkatPayableEmis.forEach((e) => {
       list.push({
-        id: `emi-${emi.id}`,
-        name: `${emi.name} (Pay to Venkat)`,
-        lender: "Venkat",
-        totalAmount: emi.amount,
+        id: `emi-venkat-payable-${e.id}`,
+        name: `${e.name} EMI (to Venkat)`,
+        lender: "Venkat Shared EMI",
+        totalAmount: e.amount,
         categoryType: "emi",
         priority: "normal",
-        note: `Ends ${emi.ends}`,
+        note: `Ends ${e.ends}`,
       });
     });
 
-    // 4. Credit Card Statement
+    // 4. Credit Card Cleared Bill
     if (creditCardBill > 0) {
       list.push({
-        id: "card-statement-total",
-        name: "Credit Card Statement Dues",
-        lender: "HDFC / Axis / YES",
+        id: `card-bill-${selectedMonth}`,
+        name: `Credit Card Settlement`,
+        lender: "Banks (HDFC/Axis/Yes)",
         totalAmount: creditCardBill,
         categoryType: "card",
         priority: "high",
-        note: "Statement bill payment",
+        note: "Clear card dues to stop high interest",
       });
     }
 
     return list;
-  }, [isInitialCleanupMonth, selectedMonth, currentCustomDebts, currentPersonalEmis, currentVenkatPayableEmis, creditCardBill]);
+  }, [
+    isInitialCleanupMonth,
+    selectedMonth,
+    currentCustomDebts,
+    currentPersonalEmis,
+    currentVenkatPayableEmis,
+    creditCardBill,
+  ]);
 
-  // Debt payment tracking helper
+  // Debt Payment tracker calculations
   const debtPaymentStats = useMemo(() => {
     return allTrackedDebts.map((debt) => {
-      const paidSoFar = sumAmounts(entries.filter((e) => e.categoryId === debt.id));
-      const remainingBalance = Math.max(0, debt.totalAmount - paidSoFar);
-      const percentCleared = Math.min(100, Math.round((paidSoFar / debt.totalAmount) * 100));
-      const isCleared = remainingBalance === 0 && paidSoFar >= debt.totalAmount;
+      const paid = entries
+        .filter((entry) => entry.categoryId === debt.id)
+        .reduce((sum, entry) => sum + entry.amount, 0);
+
+      const remainingBalance = Math.max(0, debt.totalAmount - paid);
+      const isCleared = remainingBalance === 0;
+
       return {
         ...debt,
-        paidSoFar,
+        paidSoFar: paid,
         remainingBalance,
-        percentCleared,
         isCleared,
       };
     });
   }, [allTrackedDebts, entries]);
 
-  // Dynamic Bank Debits & Live Account Balance Calculations
-  const bankDebitedEntries = useMemo(() => {
-    return entries.filter((e) => e.paidBy === "upi" || e.paidBy === "cash");
-  }, [entries]);
+  const totalDebtsOriginalTotal = useMemo(
+    () => debtPaymentStats.reduce((acc, d) => acc + d.totalAmount, 0),
+    [debtPaymentStats],
+  );
+  const totalDebtsPaidSoFar = useMemo(
+    () => debtPaymentStats.reduce((acc, d) => acc + d.paidSoFar, 0),
+    [debtPaymentStats],
+  );
+  const totalRemainingPendingOutflows = useMemo(
+    () => debtPaymentStats.reduce((acc, d) => acc + d.remainingBalance, 0),
+    [debtPaymentStats],
+  );
 
-  const totalDebitedFromBank = useMemo(() => sumAmounts(bankDebitedEntries), [bankDebitedEntries]);
-
-  const totalDebtAndEmiPaid = useMemo(() => {
-    return sumAmounts(
-      entries.filter(
-        (e) =>
-          (e.paidBy === "upi" || e.paidBy === "cash") &&
-          (e.categoryId.startsWith("debt-") ||
-            e.categoryId.startsWith("emi-") ||
-            e.categoryId.startsWith("card-") ||
-            e.categoryId.startsWith("custom-debt-")),
-      ),
-    );
-  }, [entries]);
-
-  const totalLivingPaid = useMemo(() => {
-    const livingCategoryIds = new Set(["groceries", "bike", "gym", "rent", "electricity", "misc"]);
-    return sumAmounts(
-      entries.filter(
-        (e) => (e.paidBy === "upi" || e.paidBy === "cash") && livingCategoryIds.has(e.categoryId),
-      ),
-    );
-  }, [entries]);
-
-  // Remaining Unpaid Outflows for the selected month
-  const remainingDebtsToPay = useMemo(() => {
-    return debtPaymentStats.reduce((sum, d) => sum + d.remainingBalance, 0);
-  }, [debtPaymentStats]);
-
-  const remainingLivingToPay = useMemo(() => {
-    return Math.max(0, monthLivingBudget - totalLivingPaid);
-  }, [monthLivingBudget, totalLivingPaid]);
-
-  const remainingOneTimeToPay = monthOneTimeTotal;
-
-  const totalRemainingPendingOutflows = remainingDebtsToPay + remainingLivingToPay + remainingOneTimeToPay;
-
-  // Live required balance to maintain in bank right now
+  // Live Bank Liquidity Manager calculation
+  const currentLiveBankBalance = Math.max(0, monthIncomeReceived - totalDebtsPaidSoFar);
   const liveCashNeededInBank = totalRemainingPendingOutflows + bufferTarget;
-  const initialGrossPlanRequired = totalCoreObligations + bufferTarget;
 
-  // Live bank balance
-  const activeInflowBaseline = monthIncomeReceived > 0 ? monthIncomeReceived : monthTotalIncome;
-  const currentLiveBankBalance = Math.max(0, activeInflowBaseline - totalDebitedFromBank);
-
-  // Projected Month-End Bank Balance
-  const projectedMonthEndBalance = currentLiveBankBalance - totalRemainingPendingOutflows;
-  const projectedSurplusAboveBuffer = Math.max(0, projectedMonthEndBalance - bufferTarget);
-
-  const totalRemainingHighPriorityDebt = useMemo(() => {
-    return debtPaymentStats
-      .filter((d) => d.priority === "high")
-      .reduce((sum, d) => sum + d.remainingBalance, 0);
-  }, [debtPaymentStats]);
+  // Buffer sweep surplus status
+  const isBufferSweepActive = bufferSweeps[selectedMonth] ?? false;
+  const netBufferSweepSurplus = isBufferSweepActive ? bufferTarget : 0;
+  const projectedSurplusAboveBuffer = netMonthSurplus + netBufferSweepSurplus;
 
   // Investment Allocation Recommendation for the selected month
   const investmentPlan = useMemo(
@@ -830,6 +813,7 @@ export function SafeSpendApp() {
       category: newDebtCategory,
       priority: newDebtPriority,
       note: newDebtNote.trim() || undefined,
+      month: selectedMonth,
     };
 
     setCustomDebts((prev) => ({
@@ -875,26 +859,31 @@ export function SafeSpendApp() {
   const activeEmiCount = currentPersonalEmis.length + currentVenkatPayableEmis.length;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-md bg-background pb-12 text-foreground sm:max-w-5xl">
-      {/* Sticky Header & Month Selector */}
-      <section className="sticky top-0 z-20 border-b border-white/10 bg-background/95 px-4 py-3.5 backdrop-blur sm:px-6">
+    <main className="mx-auto min-h-screen w-full max-w-5xl bg-slate-50 text-slate-900 pb-16 font-sans">
+      {/* Light Glassmorphic Sticky Header & Month Selector */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/80 bg-white/90 px-4 py-3.5 backdrop-blur-md shadow-xs sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <div className="flex items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">SafeSpend Pro</p>
-              <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-[10px]">
-                Active Engine
-              </Badge>
+          <div className="flex items-center gap-3">
+            <div className="rounded-xl bg-indigo-600 p-2.5 text-white shadow-sm shadow-indigo-500/20">
+              <Landmark className="size-5" />
             </div>
-            <h1 className="text-xl font-bold tracking-tight sm:text-2xl">Financial Command Center</h1>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-black uppercase tracking-wider text-indigo-600">SafeSpend Pro</span>
+                <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-800 text-[10px] font-bold">
+                  Active Engine
+                </Badge>
+              </div>
+              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Financial Command Center</h1>
+            </div>
           </div>
 
-          {/* Month Dropdown & Fast Navigation */}
-          <div className="flex items-center gap-2">
+          {/* Month Pill Selector & Fast Navigation */}
+          <div className="flex items-center gap-1.5 bg-slate-100/80 p-1 rounded-xl border border-slate-200">
             <Button
               size="icon"
-              variant="outline"
-              className="size-9 shrink-0 border-white/10"
+              variant="ghost"
+              className="size-8 text-slate-700 hover:bg-white hover:shadow-xs"
               disabled={!prevMonth}
               onClick={() => prevMonth && setSelectedMonth(prevMonth)}
               title="Previous Month"
@@ -902,23 +891,16 @@ export function SafeSpendApp() {
               <ChevronLeft className="size-4" />
             </Button>
 
-            <Select value={selectedMonth} onValueChange={setSelectedMonth}>
-              <SelectTrigger className="w-[170px] font-medium border-white/15 bg-card text-xs sm:text-sm">
-                <SelectValue placeholder="Select Month" />
-              </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {allForecastMonths.map((m) => (
-                  <SelectItem key={m.value} value={m.value} className="text-xs sm:text-sm">
-                    {m.label} {m.value === "2028-05" ? "🎉 Zero EMI" : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="px-3 py-1 bg-white rounded-lg border border-slate-200 shadow-2xs font-extrabold text-xs sm:text-sm text-indigo-900 flex items-center gap-1.5">
+              <Calendar className="size-3.5 text-indigo-600" />
+              <span>{formatMonthLabel(selectedMonth)}</span>
+              {selectedMonth === "2028-05" && <span className="text-[10px] text-emerald-600 font-black">🎉 Zero EMI</span>}
+            </div>
 
             <Button
               size="icon"
-              variant="outline"
-              className="size-9 shrink-0 border-white/10"
+              variant="ghost"
+              className="size-8 text-slate-700 hover:bg-white hover:shadow-xs"
               disabled={!nextMonth}
               onClick={() => nextMonth && setSelectedMonth(nextMonth)}
               title="Next Month"
@@ -927,20 +909,20 @@ export function SafeSpendApp() {
             </Button>
           </div>
         </div>
-      </section>
+      </header>
 
       {/* Main Container */}
-      <section className="space-y-4 px-4 py-4 sm:px-6">
-        {/* Month Status & Highlight Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-card/90 p-4">
+      <section className="space-y-5 px-4 py-5 sm:px-6">
+        {/* Month Highlight Banner */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-bold text-foreground">{formatMonthLabel(selectedMonth)}</span>
+              <span className="text-lg font-black text-slate-900">{formatMonthLabel(selectedMonth)}</span>
               <ForecastBadge
                 status={activeEmiCount === 0 ? "emi-zero" : netMonthSurplus >= 20000 ? "free" : netMonthSurplus >= 8000 ? "stable" : "tight"}
               />
             </div>
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs font-medium text-slate-500">
               {activeEmiCount === 0
                 ? "🎉 Complete Financial Freedom! Zero outgoing EMI obligations."
                 : `${activeEmiCount} active outgoing EMIs (${formatInr(monthOutgoingEmis)}/mo).`}
@@ -948,35 +930,40 @@ export function SafeSpendApp() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="text-right">
-              <p className="text-[11px] text-muted-foreground">Surplus to Invest</p>
-              <p className="font-mono text-xl font-extrabold text-emerald-400">{formatInr(netMonthSurplus)}</p>
-            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50"
+              onClick={resetLocalData}
+              title="Reset entries to default seed data"
+            >
+              <RefreshCcw className="mr-1.5 size-3.5" /> Reset Seed Data
+            </Button>
           </div>
         </div>
 
-        {/* Metric Cards for the Selected Month */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {/* Top 4 Light Mode Summary Cards */}
+        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
           <MetricCard
-            title="Total Inflow"
-            value={formatInr(activeInflowBaseline)}
-            detail={`${formatInr(monthIncomeReceived)} confirmed received`}
-            icon={ArrowDownToLine}
-            tone="safe"
+            title="Total Income"
+            value={formatInr(monthTotalIncome)}
+            detail={`Received: ${formatInr(monthIncomeReceived)}`}
+            icon={IndianRupee}
+            tone="info"
           />
           <MetricCard
-            title="Debited So Far"
-            value={formatInr(totalDebitedFromBank)}
-            detail={`Debts: ${formatInr(totalDebtAndEmiPaid)} · Spends: ${formatInr(totalLivingPaid)}`}
-            icon={TrendingDown}
-            tone={totalDebitedFromBank > 0 ? "warn" : "safe"}
+            title="Outgoing EMIs"
+            value={formatInr(monthOutgoingEmis)}
+            detail={`${currentPersonalEmis.length} Personal · ${currentVenkatPayableEmis.length} Venkat`}
+            icon={CreditCardIcon}
+            tone={monthOutgoingEmis > 20000 ? "warn" : "default"}
           />
           <MetricCard
             title="Live Bank Balance"
             value={formatInr(currentLiveBankBalance)}
-            detail={`Pending to pay: ${formatInr(totalRemainingPendingOutflows)}`}
+            detail={currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety buffer intact" : "⚠️ Needs cash injection"}
             icon={Landmark}
-            tone={currentLiveBankBalance >= liveCashNeededInBank ? "safe" : "warn"}
+            tone={currentLiveBankBalance >= liveCashNeededInBank ? "safe" : "danger"}
           />
           <MetricCard
             title="Must Keep in Bank"
@@ -987,37 +974,37 @@ export function SafeSpendApp() {
           />
         </div>
 
-        {/* Comprehensive Tabs */}
+        {/* HeroUI-Inspired Light Mode Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-6 bg-muted/70 p-1">
-            <TabsTrigger value="plan" className="text-[11px] sm:text-xs">Plan</TabsTrigger>
-            <TabsTrigger value="invest" className="text-[11px] sm:text-xs font-semibold text-emerald-400">Invest</TabsTrigger>
-            <TabsTrigger value="spend" className="text-[11px] sm:text-xs">Spend</TabsTrigger>
-            <TabsTrigger value="runway" className="text-[11px] sm:text-xs">Runway</TabsTrigger>
-            <TabsTrigger value="emis" className="text-[11px] sm:text-xs">EMIs</TabsTrigger>
-            <TabsTrigger value="cards" className="text-[11px] sm:text-xs">Cards</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6 bg-slate-200/70 p-1.5 rounded-2xl gap-1 border border-slate-200">
+            <TabsTrigger value="plan" className="text-xs sm:text-sm font-semibold rounded-xl py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-slate-700">Plan</TabsTrigger>
+            <TabsTrigger value="invest" className="text-xs sm:text-sm font-extrabold rounded-xl py-2 data-[state=active]:bg-emerald-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-emerald-800">Invest</TabsTrigger>
+            <TabsTrigger value="spend" className="text-xs sm:text-sm font-semibold rounded-xl py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-slate-700">Spend</TabsTrigger>
+            <TabsTrigger value="runway" className="text-xs sm:text-sm font-semibold rounded-xl py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-slate-700">Runway</TabsTrigger>
+            <TabsTrigger value="emis" className="text-xs sm:text-sm font-semibold rounded-xl py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-slate-700">EMIs</TabsTrigger>
+            <TabsTrigger value="cards" className="text-xs sm:text-sm font-semibold rounded-xl py-2 data-[state=active]:bg-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-sm transition-all text-slate-700">Cards</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: MONTH PLAN & CASHFLOW */}
           <TabsContent value="plan" className="mt-4 space-y-4">
             {/* Dynamic Live Bank Account & Month-End Liquidity Command Card */}
-            <div className="rounded-2xl border border-sky-500/30 bg-sky-500/10 p-4 space-y-3.5">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            <div className="rounded-2xl border border-sky-300/80 bg-gradient-to-br from-sky-50 via-white to-sky-50/50 p-5 space-y-4 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Landmark className="size-4 text-sky-400" />
-                    <p className="text-sm font-bold text-sky-200">
+                    <Landmark className="size-5 text-sky-600" />
+                    <p className="text-base font-extrabold text-sky-950">
                       Live Bank Balance & Liquidity Manager ({formatMonthLabel(selectedMonth)})
                     </p>
                   </div>
-                  <p className="text-xs text-sky-200/80 mt-0.5">
+                  <p className="text-xs text-sky-800 mt-0.5 font-medium">
                     Automatically subtracts debts, EMIs, card bills, and living spends as you pay them.
                   </p>
                 </div>
-                <div className="text-left sm:text-right">
-                  <p className="text-[10px] text-sky-200/70 uppercase">Must Maintain in Bank Right Now</p>
-                  <p className="font-mono text-2xl font-black text-sky-300">{formatInr(liveCashNeededInBank)}</p>
-                  <p className="text-[11px] text-sky-200/70">
+                <div className="text-left sm:text-right bg-white p-3 rounded-xl border border-sky-200 shadow-2xs">
+                  <p className="text-[10px] font-bold text-sky-700 uppercase tracking-wider">Must Maintain in Bank Right Now</p>
+                  <p className="font-mono text-2xl font-black text-sky-900">{formatInr(liveCashNeededInBank)}</p>
+                  <p className="text-[11px] font-medium text-sky-700">
                     {totalRemainingPendingOutflows > 0
                       ? `${formatInr(totalRemainingPendingOutflows)} pending + ₹5k buffer`
                       : "✓ All outflows cleared! ₹5k buffer intact"}
@@ -1026,676 +1013,198 @@ export function SafeSpendApp() {
               </div>
 
               {/* Progress: Cleared vs Remaining Required */}
-              <div className="space-y-1.5 rounded-xl bg-black/20 p-3 border border-white/5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-muted-foreground">
-                    Obligations Cleared: <strong className="text-emerald-300 font-mono">{formatInr(totalDebitedFromBank)}</strong> of <span className="font-mono">{formatInr(initialGrossPlanRequired)}</span>
-                  </span>
-                  <span className="font-mono font-bold text-sky-300">
-                    {initialGrossPlanRequired > 0 ? Math.min(100, Math.round((totalDebitedFromBank / initialGrossPlanRequired) * 100)) : 100}% Cleared
+              <div className="space-y-2 rounded-xl bg-white p-4 border border-sky-200/80 shadow-2xs">
+                <div className="flex items-center justify-between text-xs font-bold text-sky-900">
+                  <span>Outflows Settled vs Pending</span>
+                  <span className="font-mono text-slate-700">
+                    {formatInr(totalDebtsPaidSoFar)} cleared / {formatInr(totalDebtsOriginalTotal)} total
                   </span>
                 </div>
-                <Progress
-                  value={initialGrossPlanRequired > 0 ? Math.min(100, Math.round((totalDebitedFromBank / initialGrossPlanRequired) * 100)) : 100}
-                  className="h-2"
-                />
-                <div className="flex items-center justify-between text-[11px] text-muted-foreground pt-0.5">
-                  <span>Current Bank Balance: <strong className="text-foreground font-mono">{formatInr(currentLiveBankBalance)}</strong></span>
-                  <span>
-                    Projected Month-End Balance:{" "}
-                    <strong className={cn("font-mono font-semibold", projectedMonthEndBalance >= bufferTarget ? "text-emerald-300" : "text-amber-300")}>
-                      {formatInr(projectedMonthEndBalance)}
-                    </strong>
-                  </span>
-                </div>
-              </div>
-
-              {/* Sub-grid of Remaining Unpaid Balances */}
-              <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 text-xs">
-                <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-2">
-                  <p className="text-muted-foreground text-[10px]">1. Remaining Debts & EMIs</p>
-                  <p className="font-mono font-semibold text-foreground">{formatInr(remainingDebtsToPay)}</p>
-                </div>
-                <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-2">
-                  <p className="text-muted-foreground text-[10px]">2. Remaining Living Spends</p>
-                  <p className="font-mono font-semibold text-foreground">{formatInr(remainingLivingToPay)}</p>
-                </div>
-                <div className="rounded-lg bg-sky-500/10 border border-sky-500/20 p-2">
-                  <p className="text-muted-foreground text-[10px]">3. Emergency Buffer</p>
-                  <p className="font-mono font-semibold text-amber-200">{formatInr(bufferTarget)}</p>
-                </div>
-                <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2">
-                  <p className="text-emerald-300 text-[10px]">4. Projected Surplus</p>
-                  <p className="font-mono font-semibold text-emerald-400">{formatInr(projectedSurplusAboveBuffer)}</p>
-                </div>
+                <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2.5 bg-sky-100" />
               </div>
             </div>
 
-            {/* LIVE DEBTS & PARTIAL PAYMENTS LEDGER */}
-            <Card className="border-white/10 shadow-none overflow-hidden">
-              <CardHeader className="p-4 pb-2 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent">
-                <div className="flex items-center justify-between gap-3">
+            {/* Income Manager */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <div className="flex items-center justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <TrendingDown className="size-4 text-amber-400" />
-                      <CardTitle className="text-lg">Active Debts & Partial Payments Ledger</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Live tracking of payments made vs remaining balance for {formatMonthLabel(selectedMonth)}
-                    </CardDescription>
+                    <CardTitle className="text-lg font-bold text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">Toggle switch when salary/freelance money lands in bank.</CardDescription>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-amber-500/30 text-amber-200 text-xs"
-                    onClick={() => setShowAddDebt(!showAddDebt)}
-                  >
-                    <Plus className="mr-1 size-3.5" /> Add Debt / Loan
-                  </Button>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-3.5 p-4 pt-2">
-                {/* Add Custom Debt Inline Form */}
-                {showAddDebt && (
-                  <form onSubmit={handleAddDebt} className="rounded-xl border border-amber-500/30 bg-amber-500/5 p-3.5 space-y-3">
-                    <p className="text-xs font-semibold text-amber-200">Add New Debt / Borrowing for {formatMonthLabel(selectedMonth)}</p>
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
-                      <Input
-                        placeholder="Debt / Loan Name (e.g. Loan from Friend X)"
-                        value={newDebtName}
-                        onChange={(e) => setNewDebtName(e.target.value)}
-                        className="text-xs"
-                      />
-                      <Input
-                        placeholder="Lender / Person Name (e.g. Friend X / Bank)"
-                        value={newDebtLender}
-                        onChange={(e) => setNewDebtLender(e.target.value)}
-                        className="text-xs"
-                      />
-                      <Input
-                        placeholder="Total Amount Due (₹)"
-                        type="number"
-                        min="1"
-                        value={newDebtAmount}
-                        onChange={(e) => setNewDebtAmount(e.target.value)}
-                        className="text-xs"
-                      />
-                      <Select value={newDebtPriority} onValueChange={(val) => setNewDebtPriority(val as "high" | "normal")}>
-                        <SelectTrigger className="h-9 text-xs">
-                          <SelectValue placeholder="Priority" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="high">🚨 High Priority (Clear before investments)</SelectItem>
-                          <SelectItem value="normal">📌 Normal Priority</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
-                    <Input
-                      placeholder="Note / Reason (e.g. Emergency borrowing)"
-                      value={newDebtNote}
-                      onChange={(e) => setNewDebtNote(e.target.value)}
-                      className="text-xs"
-                    />
-                    <div className="flex items-center justify-end gap-2">
-                      <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => setShowAddDebt(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" size="sm" className="bg-amber-600 hover:bg-amber-500 text-xs text-white">
-                        Save Debt
-                      </Button>
-                    </div>
-                  </form>
-                )}
-
-                {/* Debt Cards List with Live Balance and Pay Buttons */}
-                <div className="space-y-2.5">
-                  {debtPaymentStats.map((debt) => (
-                    <div
-                      key={debt.id}
-                      className={cn(
-                        "rounded-xl border p-3.5 space-y-2 transition",
-                        debt.isCleared
-                          ? "border-emerald-500/30 bg-emerald-500/5"
-                          : debt.priority === "high"
-                          ? "border-amber-500/30 bg-amber-500/5"
-                          : "border-white/10 bg-muted/20",
-                      )}
-                    >
-                      <div className="flex items-start justify-between gap-3">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-semibold text-foreground">{debt.name}</span>
-                            <Badge
-                              variant="outline"
-                              className={cn(
-                                "text-[9px] px-1.5 py-0 font-medium",
-                                debt.isCleared && "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
-                                !debt.isCleared && debt.priority === "high" && "border-amber-500/30 bg-amber-500/10 text-amber-200",
-                                !debt.isCleared && debt.priority === "normal" && "border-sky-500/30 bg-sky-500/10 text-sky-200",
-                              )}
-                            >
-                              {debt.isCleared ? "✓ Cleared" : debt.priority === "high" ? "High Priority" : "Normal"}
-                            </Badge>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-0.5">
-                            Target: <span className="font-mono font-medium text-foreground">{formatInr(debt.totalAmount)}</span> · Paid this month: <span className="font-mono text-emerald-300 font-semibold">{formatInr(debt.paidSoFar)}</span>
-                          </p>
-                        </div>
-
-                        <div className="text-right shrink-0">
-                          <p className="text-[10px] text-muted-foreground uppercase">Remaining Balance</p>
-                          <p className={cn(
-                            "font-mono text-base font-black",
-                            debt.isCleared ? "text-emerald-400" : "text-amber-300",
-                          )}>
-                            {formatInr(debt.remainingBalance)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <Progress value={debt.percentCleared} className="h-1.5" />
-
-                      <div className="flex items-center justify-between text-xs pt-0.5">
-                        <span className="text-[11px] text-muted-foreground">
-                          {debt.percentCleared}% paid ({debt.note || debt.lender})
-                        </span>
-                        <div className="flex items-center gap-1.5">
-                          {!debt.isCleared && (
-                            <Button
-                              size="sm"
-                              variant="secondary"
-                              className="h-6 text-[10px] px-2 font-medium bg-secondary hover:bg-secondary/80 text-foreground"
-                              onClick={() => handleQuickPayDebt(debt.id, debt.remainingBalance)}
-                            >
-                              Pay / Log Partial
-                            </Button>
-                          )}
-                          {debt.id.startsWith("custom-debt-") && (
-                            <Button
-                              size="icon"
-                              variant="ghost"
-                              className="size-6 text-muted-foreground hover:text-red-400"
-                              onClick={() => deleteDebt(debt.id.replace("custom-debt-", ""))}
-                            >
-                              <Trash2 className="size-3" />
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <CardTitle className="text-lg">
-                      {formatMonthLabel(selectedMonth)} Inflows & Incomes
-                    </CardTitle>
-                    <CardDescription>
-                      All income sources configured for this month.
-                    </CardDescription>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="border-white/15 text-xs"
+                    className="h-8 text-xs font-semibold border-indigo-200 text-indigo-700 bg-indigo-50/50 hover:bg-indigo-100"
                     onClick={() => setShowAddIncome(!showAddIncome)}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Income
                   </Button>
                 </div>
               </CardHeader>
-
-              <CardContent className="space-y-3.5 p-4 pt-2">
-                {/* Add Income Inline Form */}
+              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
                 {showAddIncome && (
-                  <form onSubmit={handleAddIncome} className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3.5 space-y-3">
-                    <p className="text-xs font-semibold text-emerald-300">Add Income Source for {formatMonthLabel(selectedMonth)}</p>
-                    <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-3">
+                  <form onSubmit={handleAddIncome} className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-3.5 space-y-3">
+                    <p className="text-xs font-bold text-indigo-900">Add Extra Income Stream for {formatMonthLabel(selectedMonth)}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <Input
-                        placeholder="e.g., Freelance Project X"
+                        placeholder="Source name (e.g. Freelance)"
                         value={newIncomeName}
                         onChange={(e) => setNewIncomeName(e.target.value)}
-                        className="text-xs"
+                        className="bg-white border-slate-200 text-xs"
                       />
                       <Input
                         placeholder="Amount (₹)"
                         type="number"
-                        min="1"
                         value={newIncomeAmount}
                         onChange={(e) => setNewIncomeAmount(e.target.value)}
-                        className="text-xs"
+                        className="bg-white border-slate-200 text-xs"
                       />
                       <Input
-                        placeholder="Expected Date (e.g. Sep 15)"
+                        placeholder="Expected date (e.g. Mid Sep)"
                         value={newIncomeDate}
                         onChange={(e) => setNewIncomeDate(e.target.value)}
-                        className="text-xs"
+                        className="bg-white border-slate-200 text-xs"
                       />
                     </div>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button type="button" size="sm" variant="ghost" className="text-xs" onClick={() => setShowAddIncome(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" size="sm" className="bg-emerald-600 hover:bg-emerald-500 text-xs">
-                        Save Inflow
-                      </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" type="submit" className="h-8 text-xs font-semibold bg-indigo-600 hover:bg-indigo-700 text-white">Save Income</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddIncome(false)}>Cancel</Button>
                     </div>
                   </form>
                 )}
 
-                {/* 1. Incomes Breakdown */}
-                <BreakdownGroup
-                  title="Total Expected Inflow"
-                  total={formatInr(monthTotalIncome)}
-                  subtitle="Salary + configured freelance sources for this month"
-                  badge="Inflow"
-                  tone="safe"
-                >
+                <div className="space-y-2">
                   {currentIncomes.map((source) => (
-                    <div key={source.id} className="flex items-center justify-between gap-2 py-1 text-xs">
-                      <div className="flex min-w-0 items-center gap-2">
+                    <div key={source.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 bg-white hover:bg-slate-50/80 transition-colors">
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2">
+                          <p className="truncate text-sm font-semibold text-slate-900">{source.name}</p>
+                          <Badge variant="outline" className={cn("text-[10px] font-bold px-1.5 py-0", source.status === "received" ? "border-emerald-300 bg-emerald-100 text-emerald-800" : "border-slate-300 text-slate-600")}>
+                            {source.status === "received" ? "✓ Received" : `Pending (${source.expectedDate})`}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <p className="font-mono text-sm font-black text-slate-900">{formatInr(source.amount)}</p>
                         <Switch
-                          size="sm"
                           checked={source.status === "received"}
                           onCheckedChange={() => toggleIncomeStatus(source.id)}
-                          aria-label={`Toggle received status for ${source.name}`}
+                          aria-label={`Toggle status for ${source.name}`}
                         />
-                        <span className="font-medium truncate">{source.name}</span>
-                        <span className="text-[11px] text-muted-foreground">({source.expectedDate})</span>
-                        {source.status === "received" ? (
-                          <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 text-[9px] px-1 py-0">
-                            Received
-                          </Badge>
-                        ) : null}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono">{formatInr(source.amount)}</span>
-                        {currentIncomes.length > 1 ? (
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="size-6 text-muted-foreground hover:text-red-400"
-                            onClick={() => deleteIncome(source.id)}
-                          >
-                            <Trash2 className="size-3" />
+                        {monthlyIncomes[selectedMonth] && (
+                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteIncome(source.id)}>
+                            <Trash2 className="size-3.5" />
                           </Button>
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   ))}
-                </BreakdownGroup>
-
-                {/* 2. Outgoing EMIs Breakdown */}
-                <BreakdownGroup
-                  title="Outgoing EMI Transfers"
-                  total={formatInr(monthOutgoingEmis)}
-                  subtitle="Personal EMIs + payments sent to Venkat"
-                  badge={monthOutgoingEmis === 0 ? "Zero Debt" : "Debited from Bank"}
-                  tone={monthOutgoingEmis === 0 ? "safe" : "warn"}
-                >
-                  {monthOutgoingEmis === 0 ? (
-                    <p className="text-xs text-emerald-300 font-medium py-1">
-                      🎉 No active outgoing EMIs in this month!
-                    </p>
-                  ) : (
-                    <>
-                      {currentPersonalEmis.length > 0 && (
-                        <>
-                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-1 mb-0.5">
-                            Personal EMIs ({formatInr(monthPersonalEmisTotal)})
-                          </p>
-                          {currentPersonalEmis.map((emi) => (
-                            <BreakdownItem
-                              key={emi.id}
-                              name={emi.name}
-                              amount={formatInr(emi.amount)}
-                              detail={`Ends ${emi.ends}`}
-                            />
-                          ))}
-                        </>
-                      )}
-
-                      {currentVenkatPayableEmis.length > 0 && (
-                        <>
-                          <p className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider mt-2 mb-0.5">
-                            Pay to Venkat ({formatInr(monthVenkatPayableTotal)})
-                          </p>
-                          {currentVenkatPayableEmis.map((emi) => (
-                            <BreakdownItem
-                              key={emi.id}
-                              name={emi.name}
-                              amount={formatInr(emi.amount)}
-                              detail={`Ends ${emi.ends}`}
-                            />
-                          ))}
-                        </>
-                      )}
-                    </>
-                  )}
-                </BreakdownGroup>
-
-                {/* 3. Credit Cards Breakdown Group */}
-                <BreakdownGroup
-                  title="Credit Card Statement Dues & Spends"
-                  total={formatInr(creditCardBill)}
-                  subtitle="Card bill payments made separately from bank account"
-                  badge={creditCardBill > 0 ? "Card Payment" : "Clean"}
-                  tone={creditCardBill > 0 ? "warn" : "safe"}
-                >
-                  <div className="flex items-center justify-between py-1">
-                    <span className="text-xs text-muted-foreground">Statement bill due this month:</span>
-                    <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-semibold">{formatInr(creditCardBill)}</span>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-6 text-[11px] px-2 text-muted-foreground hover:text-foreground"
-                        onClick={() => {
-                          setCardBillInput(String(creditCardBill));
-                          setEditCardBill(!editCardBill);
-                        }}
-                      >
-                        {editCardBill ? "Close" : "Edit"}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {editCardBill && (
-                    <form onSubmit={handleSaveCardBill} className="flex items-center gap-2 py-1.5">
-                      <Input
-                        type="number"
-                        min="0"
-                        placeholder="Card Bill Due (₹)"
-                        value={cardBillInput}
-                        onChange={(e) => setCardBillInput(e.target.value)}
-                        className="h-7 text-xs"
-                      />
-                      <Button type="submit" size="sm" className="h-7 text-xs px-2.5">
-                        Save
-                      </Button>
-                    </form>
-                  )}
-
-                  {isInitialCleanupMonth ? (
-                    <>
-                      <BreakdownItem name="HDFC Credit Card Bill" amount={formatInr(10000)} detail="Statement due" />
-                      <BreakdownItem name="Axis Bank Credit Card Bill" amount={formatInr(5000)} detail="Statement due" />
-                      <BreakdownItem name="YES Bank Credit Card Bill" amount={formatInr(5000)} detail="Statement due" />
-                    </>
-                  ) : creditCardBill > 0 ? (
-                    <BreakdownItem name="Configured Card Statement Total" amount={formatInr(creditCardBill)} detail="Paid from bank" />
-                  ) : (
-                    <p className="text-xs text-emerald-300 py-0.5">
-                      ✓ No revolving card bill. Card rule: ₹0 new debt.
-                    </p>
-                  )}
-
-                  {totalNewCardSpent > 0 && (
-                    <div className="mt-1 pt-1 border-t border-white/10 text-xs text-amber-200">
-                      <p className="font-medium">Recent Card Spends Logged in App ({formatInr(totalNewCardSpent)}):</p>
-                      {hdfcSpent > 0 && <BreakdownItem name="HDFC Card Spend" amount={formatInr(hdfcSpent)} tag="Logged" />}
-                      {axisSpent > 0 && <BreakdownItem name="Axis Card Spend" amount={formatInr(axisSpent)} tag="Logged" />}
-                      {yesBankSpent > 0 && <BreakdownItem name="YES Bank Card Spend" amount={formatInr(yesBankSpent)} tag="Logged" />}
-                    </div>
-                  )}
-                </BreakdownGroup>
-
-                {/* 4. Living & Overhead Bills */}
-                <BreakdownGroup
-                  title="Monthly Living Spends & Bills"
-                  total={formatInr(monthLivingBudget)}
-                  subtitle="Fixed rent/utilities + daily variable living cash"
-                >
-                  <BreakdownItem name="Room Rent & Overhead Bills" amount={formatInr(6500)} tag="Fixed" />
-                  <BreakdownItem name="Gym & Fitness" amount={formatInr(2500)} tag="Fixed" />
-                  <BreakdownItem name="Variable Groceries & Daily Needs" amount={formatInr(3000)} tag="Variable" />
-                  <BreakdownItem name="Fuel & Bike Maintenance" amount={formatInr(3000)} tag="Variable" />
-                  <BreakdownItem
-                    name="Miscellaneous Variable Expenses"
-                    amount={formatInr(isInitialCleanupMonth ? 3000 : 500)}
-                    tag="Misc"
-                  />
-                </BreakdownGroup>
-
-                {/* 5. Priority Debts (for Sep / Nov) */}
-                {(daddyRepayment > 0 || venkatDirectPayment > 0) && (
-                  <BreakdownGroup
-                    title="Priority Debt Settlements"
-                    total={formatInr(daddyRepayment + venkatDirectPayment)}
-                    subtitle="Mandatory priority family & personal settlements"
-                    badge="Priority"
-                    tone="danger"
-                  >
-                    {daddyRepayment > 0 && <BreakdownItem name="Daddy Repayment" amount={formatInr(daddyRepayment)} detail="Must pay fully" />}
-                    {venkatDirectPayment > 0 && <BreakdownItem name="Venkat Direct Settlement" amount={formatInr(venkatDirectPayment)} detail="Clears balance" />}
-                  </BreakdownGroup>
-                )}
-
-                {/* 6. Buffer & Net Surplus Summary */}
-                <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-4 space-y-2">
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Total Inflow vs Outflows (including cards):</span>
-                    <span className="font-mono">{formatInr(monthTotalIncome)} − {formatInr(totalCoreObligations)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-xs text-muted-foreground">
-                    <span>Emergency Buffer (Stays safe in bank):</span>
-                    <span className="font-mono font-medium text-amber-200">− {formatInr(bufferTarget)}</span>
-                  </div>
-                  <Separator className="my-1.5 bg-emerald-500/20" />
-                  <div className="flex items-center justify-between">
-                    <span className="text-sm font-bold text-emerald-300">Net Surplus to Invest:</span>
-                    <span className="font-mono text-xl font-extrabold text-emerald-400">{formatInr(netMonthSurplus)}</span>
-                  </div>
                 </div>
+              </CardContent>
+            </Card>
 
-                {/* Dedicated Venkat Statement & Debit Tracker */}
-                {monthVenkatDebitOnNameTotal > 0 && (
-                  <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-3.5 space-y-2">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-xs font-semibold text-amber-200">Venkat Statement & Bank Debit Tracker</p>
-                          <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px] px-1.5 py-0">
-                            Tracking only
-                          </Badge>
-                        </div>
-                        <p className="mt-0.5 text-[11px] text-muted-foreground">
-                          On your name · Auto-debits your account · Venkat pays back before due date
-                        </p>
-                      </div>
-                      <p className="font-mono text-xs font-bold text-amber-200">
-                        {formatInr(monthVenkatDebitOnNameTotal)}
-                      </p>
-                    </div>
-                    <div className="border-l-2 border-amber-500/20 pl-2.5 space-y-1 pt-0.5">
-                      {currentVenkatOnYourNameEmis.map((emi) => (
-                        <BreakdownItem
-                          key={emi.id}
-                          name={emi.name}
-                          amount={formatInr(emi.amount)}
-                          detail={emi.note ? `${emi.ends} · ${emi.note}` : `Ends ${emi.ends}`}
-                          tag="Reimbursement"
-                        />
-                      ))}
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/80 italic">
-                      ℹ️ For statement tracking to tell Venkat the exact amount each month. Does not reduce your personal spendable cash.
-                    </p>
+            {/* Custom Debts Manager for Selected Month */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <CardTitle className="text-lg font-bold text-slate-900">Custom Debts & Loans ({formatMonthLabel(selectedMonth)})</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">Track loans from friends, private lenders, or apps.</CardDescription>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-8 text-xs font-semibold border-amber-200 text-amber-800 bg-amber-50/50 hover:bg-amber-100"
+                    onClick={() => setShowAddDebt(!showAddDebt)}
+                  >
+                    <Plus className="mr-1 size-3.5" /> Add Debt
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+                {showAddDebt && (
+                  <form onSubmit={handleAddDebt} className="rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 space-y-3">
+                    <p className="text-xs font-bold text-amber-900">Add New Debt / Loan Item</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                      <Input placeholder="Debt name (e.g. Friend Loan)" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border-slate-200 text-xs" />
+                      <Input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border-slate-200 text-xs" />
+                      <Input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border-slate-200 text-xs" />
+                    </div>
+                    <div className="flex gap-2">
+                      <Button size="sm" type="submit" className="h-8 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white">Save Debt</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddDebt(false)}>Cancel</Button>
+                    </div>
+                  </form>
                 )}
 
-                {/* Advance to Next Month Button */}
-                {nextMonth && (
-                  <Button
-                    className="w-full h-11 text-xs font-semibold bg-secondary hover:bg-secondary/80 text-foreground"
-                    onClick={() => setSelectedMonth(nextMonth)}
-                  >
-                    Finish {formatMonthLabel(selectedMonth)} & Plan {formatMonthLabel(nextMonth)} <ArrowRight className="ml-2 size-4" />
-                  </Button>
+                {currentCustomDebts.length === 0 ? (
+                  <p className="text-xs text-slate-500 italic">No custom debts logged for {formatMonthLabel(selectedMonth)}.</p>
+                ) : (
+                  <div className="space-y-2">
+                    {currentCustomDebts.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3 bg-white">
+                        <div>
+                          <p className="text-sm font-semibold text-slate-900">{d.name} ({d.lender})</p>
+                          {d.note && <p className="text-xs text-slate-500">{d.note}</p>}
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <p className="font-mono text-sm font-black text-slate-900">{formatInr(d.totalAmount)}</p>
+                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteDebt(d.id)}>
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
 
-          {/* TAB 2: EXACT INVESTMENT ENGINE (NO DIPLOMACY) */}
+          {/* TAB 2: WEALTH INVESTMENT ENGINE */}
           <TabsContent value="invest" className="mt-4 space-y-4">
-            <Card className="border-white/10 shadow-none overflow-hidden">
-              <CardHeader className="p-4 pb-2 bg-gradient-to-r from-emerald-500/10 via-transparent to-transparent">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-emerald-400" />
-                      <CardTitle className="text-lg">Exact Investment Allocation</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Straightaway wealth engine for {formatMonthLabel(selectedMonth)} · No vague options
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs">
-                    {investmentPlan.stageName}
-                  </Badge>
+            <Card className="overflow-hidden border-emerald-200 shadow-sm rounded-2xl bg-white">
+              <div className="bg-gradient-to-r from-emerald-600 to-teal-600 p-5 text-white">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="size-5" />
+                  <h2 className="text-lg font-black">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
                 </div>
-              </CardHeader>
-
-              <CardContent className="space-y-4 p-4 pt-2">
-                {/* Clear Debt First Alert if any high-priority debt remains */}
-                {totalRemainingHighPriorityDebt > 0 && (
-                  <Alert className="border-amber-500/30 bg-amber-500/10 text-xs text-amber-100">
-                    <ShieldAlert className="size-4 text-amber-400" />
-                    <AlertTitle className="font-bold text-amber-300">Debt Clearance First Priority</AlertTitle>
-                    <AlertDescription className="mt-1 text-muted-foreground leading-relaxed">
-                      You have <strong className="text-amber-200 font-mono">{formatInr(totalRemainingHighPriorityDebt)}</strong> in active high-priority debt remaining for {formatMonthLabel(selectedMonth)} (e.g. Daddy / Venkat / Card Bills). Allocate your available surplus cash to clear these debts first before locking funds into long-term SIPs!
-                    </AlertDescription>
-                  </Alert>
-                )}
-
-                <Alert className="border-emerald-500/20 bg-emerald-500/5 text-xs text-emerald-100">
-                  <Coins className="size-4" />
-                  <AlertTitle className="font-semibold text-emerald-300">The 3-Bucket Battle-Tested Strategy</AlertTitle>
-                  <AlertDescription className="mt-1 text-muted-foreground leading-relaxed">
-                    {investmentPlan.strategyGuidance} Every rupee is accounted for.
-                  </AlertDescription>
-                </Alert>
-
-                {/* Exact Funds Breakdown */}
-                <div className="space-y-3">
-                  {/* Fund 1: Liquid Fund / Emergency */}
-                  <div className="rounded-xl border border-sky-500/20 bg-sky-500/5 p-3.5 space-y-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-sky-200">1. {investmentPlan.liquidFundName}</span>
-                          <Badge variant="outline" className="border-sky-500/30 text-sky-300 text-[10px] px-1.5 py-0">
-                            Emergency Fortress
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{investmentPlan.liquidFundNote}</p>
-                      </div>
-                      <p className="font-mono text-base font-extrabold text-sky-300">
-                        {formatInr(investmentPlan.liquidFundAmount)}
-                      </p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/80 italic">
-                      Zero market risk · T+1 instant withdrawal to bank · Earns ~7% CAGR vs 2.7% savings.
-                    </p>
-                  </div>
-
-                  {/* Fund 2: Core Nifty 50 Index */}
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-3.5 space-y-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-emerald-200">2. {investmentPlan.niftyIndexFundName}</span>
-                          <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 text-[10px] px-1.5 py-0">
-                            Core India Index
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{investmentPlan.niftyIndexFundNote}</p>
-                      </div>
-                      <p className="font-mono text-base font-extrabold text-emerald-300">
-                        {formatInr(investmentPlan.niftyIndexFundAmount)}
-                      </p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/80 italic">
-                      India&apos;s top 50 bluechip giants (Reliance, HDFC, TCS, Infosys) · Lowest 0.18% expense ratio · 13-14% CAGR.
-                    </p>
-                  </div>
-
-                  {/* Fund 3: Flexi Cap Alpha Engine */}
-                  <div className="rounded-xl border border-violet-500/20 bg-violet-500/5 p-3.5 space-y-1.5">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold text-violet-200">3. {investmentPlan.flexiCapFundName}</span>
-                          <Badge variant="outline" className="border-violet-500/30 text-violet-300 text-[10px] px-1.5 py-0">
-                            Global & Multi-Cap Alpha
-                          </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{investmentPlan.flexiCapFundNote}</p>
-                      </div>
-                      <p className="font-mono text-base font-extrabold text-violet-300">
-                        {formatInr(investmentPlan.flexiCapFundAmount)}
-                      </p>
-                    </div>
-                    <p className="text-[11px] text-muted-foreground/80 italic">
-                      India&apos;s #1 consistent mutual fund · Indian leaders + Global tech (Alphabet/Microsoft) · 16-18% CAGR track record.
-                    </p>
+                <p className="text-xs text-emerald-100 mt-1 font-medium">{investmentPlan.strategyGuidance}</p>
+              </div>
+              <CardContent className="p-5 space-y-4">
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-xs font-extrabold text-emerald-950 uppercase">Total Monthly Surplus Invested</span>
+                    <span className="font-mono text-2xl font-black text-emerald-900">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
                   </div>
                 </div>
 
-                {/* Buffer Sweep Protocol Card */}
-                <div className="rounded-xl border border-white/10 bg-muted/30 p-3.5 space-y-2.5">
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <p className="text-xs font-semibold text-foreground">30-Day Buffer Sweep Protocol</p>
-                      <p className="text-[11px] text-muted-foreground">
-                        On Day 30, transfer any unspent balance from your ₹5,000 buffer into Parag Parikh Liquid Fund.
-                      </p>
-                    </div>
-                    <Switch
-                      checked={Boolean(bufferSweeps[selectedMonth])}
-                      onCheckedChange={() => toggleBufferSweep(selectedMonth)}
-                      aria-label="Mark 30-day buffer sweep as executed"
-                    />
-                  </div>
-                  {bufferSweeps[selectedMonth] ? (
-                    <div className="rounded-lg bg-emerald-500/10 border border-emerald-500/20 p-2 text-xs text-emerald-300 flex items-center gap-2">
-                      <CheckCircle2 className="size-3.5" /> Buffer sweep executed for {formatMonthLabel(selectedMonth)}. Zero cash wasted!
-                    </div>
-                  ) : null}
-                </div>
+                <div className="space-y-3 pt-1">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-600">Fund Allocation Breakdown:</p>
 
-                {/* Wealth Compounding Projection Calculator */}
-                <div className="rounded-xl border border-white/10 bg-muted/20 p-3.5 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <p className="text-xs font-bold text-foreground uppercase tracking-wider">Wealth Compounding Projection (at 13% CAGR)</p>
-                    <TrendingUp className="size-4 text-emerald-400" />
+                  <div className="rounded-xl border border-slate-200 p-3.5 bg-slate-50/50 space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
+                      <span>{investmentPlan.liquidFundName}</span>
+                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.liquidFundAmount)}</span>
+                    </div>
+                    <p className="text-xs text-slate-500 font-medium">{investmentPlan.liquidFundNote}</p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-lg border border-white/10 bg-card/60 p-2.5">
-                      <p className="text-muted-foreground text-[10px]">In 3 Years</p>
-                      <p className="mt-1 font-mono font-bold text-emerald-400 text-sm">
-                        {formatInr(netMonthSurplus >= 30000 ? 1550000 : netMonthSurplus >= 15000 ? 820000 : 450000)}
-                      </p>
+
+                  <div className="rounded-xl border border-slate-200 p-3.5 bg-slate-50/50 space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
+                      <span>{investmentPlan.niftyIndexFundName}</span>
+                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.niftyIndexFundAmount)}</span>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-card/60 p-2.5">
-                      <p className="text-muted-foreground text-[10px]">In 5 Years</p>
-                      <p className="mt-1 font-mono font-bold text-emerald-400 text-sm">
-                        {formatInr(netMonthSurplus >= 30000 ? 2980000 : netMonthSurplus >= 15000 ? 1650000 : 920000)}
-                      </p>
+                    <p className="text-xs text-slate-500 font-medium">{investmentPlan.niftyIndexFundNote}</p>
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 p-3.5 bg-slate-50/50 space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
+                      <span>{investmentPlan.flexiCapFundName}</span>
+                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.flexiCapFundAmount)}</span>
                     </div>
-                    <div className="rounded-lg border border-white/10 bg-card/60 p-2.5">
-                      <p className="text-muted-foreground text-[10px]">In 10 Years</p>
-                      <p className="mt-1 font-mono font-bold text-emerald-400 text-sm">
-                        {formatInr(netMonthSurplus >= 30000 ? 8250000 : netMonthSurplus >= 15000 ? 4600000 : 2550000)}
-                      </p>
-                    </div>
+                    <p className="text-xs text-slate-500 font-medium">{investmentPlan.flexiCapFundNote}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1704,63 +1213,29 @@ export function SafeSpendApp() {
 
           {/* TAB 3: SPEND TRACKER & PARTIAL PAYMENT ENGINE */}
           <TabsContent value="spend" className="mt-4 space-y-4">
-            {/* Quick-Pay Debts Chips */}
-            {debtPaymentStats.some((d) => !d.isCleared) && (
-              <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-3.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-amber-200 uppercase tracking-wider">
-                    Quick-Pay Unpaid Debts ({formatMonthLabel(selectedMonth)})
-                  </p>
-                  <Badge variant="outline" className="border-amber-500/30 text-amber-300 text-[10px]">
-                    Tap to auto-fill
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-2 pt-1">
-                  {debtPaymentStats
-                    .filter((d) => !d.isCleared)
-                    .map((debt) => (
-                      <Button
-                        key={debt.id}
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        className={cn(
-                          "h-8 text-xs font-medium border-white/15",
-                          categoryId === debt.id && "border-amber-400 bg-amber-500/20 text-amber-100 ring-1 ring-amber-400",
-                        )}
-                        onClick={() => handleQuickPayDebt(debt.id, debt.remainingBalance)}
-                      >
-                        {debt.name}: <span className="ml-1 font-mono font-bold">{formatInr(debt.remainingBalance)} left</span>
-                      </Button>
-                    ))}
-                </div>
-              </div>
-            )}
-
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
+            {/* Form Card */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <CardTitle className="flex items-center gap-2 text-lg font-bold text-slate-900">
                   {editingEntryId ? (
                     <>
-                      <Pencil className="size-4 text-amber-400" /> Edit spend or payment
+                      <Pencil className="size-5 text-amber-600" /> Edit Spend or Payment Entry
                     </>
                   ) : (
                     <>
-                      <Plus className="size-4" /> Add spend or partial debt payment
+                      <Plus className="size-5 text-indigo-600" /> Add Spend or Debt Payment
                     </>
                   )}
                 </CardTitle>
-                <CardDescription>
-                  {editingEntryId
-                    ? "Modify details for this expense and save changes."
-                    : "Select living expense or a debt/EMI category to log payments."}
+                <CardDescription className="text-xs text-slate-500">
+                  {editingEntryId ? "Update entry details below and save changes." : "Log daily expenses or debt payoffs. Practical interactive button grid below!"}
                 </CardDescription>
               </CardHeader>
-              <CardContent className="p-4 pt-2">
-                <form className="space-y-3" onSubmit={addSpend}>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                    <div className="space-y-2">
-                      <Label htmlFor="spendDate">Date</Label>
+              <CardContent className="p-4 sm:p-5 pt-2">
+                <form className="space-y-4" onSubmit={addSpend}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="spendDate" className="text-xs font-bold text-slate-700">Date of Expense</Label>
                       <Input
                         id="spendDate"
                         type="date"
@@ -1771,151 +1246,209 @@ export function SafeSpendApp() {
                           const today = getLocalDateString();
                           setSpendDate(val > today ? today : val);
                         }}
+                        className="bg-white border-slate-200 text-sm h-10"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="amount">Amount (₹)</Label>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="amount" className="text-xs font-bold text-slate-700">Amount (₹)</Label>
                       <Input
                         id="amount"
                         inputMode="numeric"
                         min="1"
-                        placeholder="e.g. 35000"
+                        placeholder="e.g. 3500"
                         type="number"
                         value={amount}
                         onChange={(event) => setAmount(event.target.value)}
+                        className="bg-white border-slate-200 text-sm h-10 font-mono font-bold text-slate-900"
                       />
                     </div>
-                    <div className="space-y-2">
-                      <Label>Paid by</Label>
-                      <Select value={paidBy} onValueChange={(value) => setPaidBy(value as SpendEntry["paidBy"])}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Method" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {paymentMethods.map((method) => (
-                            <SelectItem key={method.id} value={method.id}>{method.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                  </div>
+
+                  {/* Practical Category Selection Button Grid (Replaces Select Dropdown) */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700">Select Category</Label>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                      {categoryOptions.map((cat) => {
+                        const isSelected = categoryId === cat.id;
+                        return (
+                          <button
+                            key={cat.id}
+                            type="button"
+                            onClick={() => setCategoryId(cat.id)}
+                            className={cn(
+                              "flex flex-col items-start p-3 rounded-xl border text-left transition-all",
+                              isSelected
+                                ? "bg-indigo-50 border-2 border-indigo-600 text-indigo-950 font-bold shadow-xs ring-1 ring-indigo-500/30"
+                                : "bg-white border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50",
+                            )}
+                          >
+                            <span className="text-sm font-semibold">{cat.icon} {cat.label}</span>
+                            <span className={cn("text-[11px]", isSelected ? "text-indigo-700 font-medium" : "text-slate-500")}>
+                              {cat.budget}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    {/* Quick Debt Category Chips */}
+                    {debtPaymentStats.length > 0 && (
+                      <div className="space-y-1.5 pt-2">
+                        <p className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Or Select Debt / Repayment Category:</p>
+                        <div className="flex flex-wrap gap-2">
+                          {debtPaymentStats.map((debt) => {
+                            const isSelected = categoryId === debt.id;
+                            return (
+                              <button
+                                key={debt.id}
+                                type="button"
+                                onClick={() => {
+                                  setCategoryId(debt.id);
+                                  if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
+                                }}
+                                className={cn(
+                                  "px-3 py-2 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5",
+                                  isSelected
+                                    ? "bg-amber-50 border-2 border-amber-500 text-amber-950 shadow-xs font-bold"
+                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
+                                )}
+                              >
+                                <span>{debt.priority === "high" ? "🚨" : "🤝"}</span>
+                                <span>{debt.name}</span>
+                                <span className="font-mono text-[11px] opacity-80">({debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)})</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Practical Payment Method Segmented Control (Replaces Select Dropdown) */}
+                  <div className="space-y-2">
+                    <Label className="text-xs font-bold text-slate-700">Payment Method</Label>
+                    <div className="flex flex-wrap gap-1.5 p-1.5 bg-slate-100 rounded-xl border border-slate-200">
+                      {paymentMethods.map((method) => {
+                        const isSelected = paidBy === method.id;
+                        return (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setPaidBy(method.id)}
+                            className={cn(
+                              "flex-1 min-w-[80px] py-2 px-3 text-xs font-semibold rounded-lg transition-all text-center flex items-center justify-center gap-1",
+                              isSelected
+                                ? "bg-indigo-600 text-white shadow-xs font-bold"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60",
+                            )}
+                          >
+                            <span>{method.icon}</span>
+                            <span>{method.label}</span>
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
 
-                  <div className="space-y-2">
-                    <Label>Spend / Debt Category</Label>
-                    <Select value={categoryId} onValueChange={setCategoryId}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select Category" />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[320px]">
-                        <SelectItem value="groceries">🛒 Groceries & Daily Needs (₹3,000/mo)</SelectItem>
-                        <SelectItem value="bike">⛽ Bike Fuel & Maintenance (₹3,000/mo)</SelectItem>
-                        <SelectItem value="gym">🏋️ Gym & Fitness (₹2,500/mo)</SelectItem>
-                        <SelectItem value="rent">🏠 Room Rent (₹6,000/mo)</SelectItem>
-                        <SelectItem value="electricity">⚡ Electricity (₹500/mo)</SelectItem>
-                        <SelectItem value="misc">☕ Miscellaneous Living</SelectItem>
-
-                        {/* Debts & Repayments Category Group */}
-                        {debtPaymentStats.map((debt) => (
-                          <SelectItem key={debt.id} value={debt.id}>
-                            {debt.priority === "high" ? "🚨" : "🤝"} {debt.name} ({debt.isCleared ? "Fully Cleared" : `${formatInr(debt.remainingBalance)} balance left`})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="note">Note / Remarks</Label>
+                  <div className="space-y-1.5">
+                    <Label htmlFor="note" className="text-xs font-bold text-slate-700">Note / Remarks (Optional)</Label>
                     <Input
                       id="note"
-                      placeholder="e.g. Partial repayment, UPI transaction..."
+                      placeholder="e.g. Grocery store purchase, UPI transaction..."
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
+                      className="bg-white border-slate-200 text-xs h-10"
                     />
                   </div>
 
-                  {paidBy !== "upi" && paidBy !== "cash" ? (
-                    <Alert className="border-amber-500/20 bg-amber-500/10">
-                      <AlertCircle className="size-4" />
-                      <AlertTitle>Card warning</AlertTitle>
-                      <AlertDescription>
-                        Current rule is card usage ₹0 until limits recover. Use UPI/cash unless unavoidable.
+                  {paidBy !== "upi" && paidBy !== "cash" && (
+                    <Alert className="border-amber-200 bg-amber-50">
+                      <AlertCircle className="size-4 text-amber-700" />
+                      <AlertTitle className="text-xs font-bold text-amber-900">Card Warning</AlertTitle>
+                      <AlertDescription className="text-xs text-amber-800">
+                        Rule: Card usage ₹0 until credit limit utilization drops below 30%.
                       </AlertDescription>
                     </Alert>
-                  ) : null}
+                  )}
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Button className="h-11 flex-1 text-sm font-semibold" type="submit">
+                    <Button className="h-11 flex-1 text-sm font-bold bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm shadow-indigo-500/20 rounded-xl" type="submit">
                       {editingEntryId ? "Update Spend Entry" : "Save Spend / Payment"}
                     </Button>
-                    {editingEntryId ? (
+                    {editingEntryId && (
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-11 border-white/15"
+                        className="h-11 border-slate-200 text-slate-700 rounded-xl"
                         onClick={cancelEditingEntry}
                       >
                         Cancel
                       </Button>
-                    ) : null}
+                    )}
                   </div>
                 </form>
               </CardContent>
             </Card>
 
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="text-lg">Budget pace</CardTitle>
-                <CardDescription>{pace.message}</CardDescription>
+            {/* Budget Pace Meter */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base font-bold text-slate-900">Safe Spend Pace Meter</CardTitle>
+                  <StatusBadge status={pace.status} />
+                </div>
+                <CardDescription className="text-xs text-slate-500">{pace.message}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4 p-4 pt-2">
+              <CardContent className="space-y-4 p-4 sm:p-5 pt-2">
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-sm">
-                    <span>Monthly variable spend</span>
-                    <span className="font-mono text-muted-foreground">
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-700">
+                    <span>Monthly Variable Spend</span>
+                    <span className="font-mono">
                       {formatInr(variableSpent)} / {formatInr(variableBudget)}
                     </span>
                   </div>
-                  <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} />
+                  <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2.5 bg-slate-100" />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-lg border border-white/10 p-3">
-                    <p className="text-muted-foreground">Day</p>
-                    <p className="mt-1 font-mono text-base">{dayOfMonth}/30</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Day</p>
+                    <p className="mt-1 font-mono text-base font-bold text-slate-900">{dayOfMonth}/30</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 p-3">
-                    <p className="text-muted-foreground">Allowed</p>
-                    <p className="mt-1 font-mono text-base">{formatInr(pace.allowedByToday)}</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Allowed</p>
+                    <p className="mt-1 font-mono text-base font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
                   </div>
-                  <div className="rounded-lg border border-white/10 p-3">
-                    <p className="text-muted-foreground">Projected</p>
-                    <p className="mt-1 font-mono text-base">{formatInr(pace.projectedMonthEnd)}</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Projected End</p>
+                    <p className="mt-1 font-mono text-base font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+            {/* Spend Ledger & Filterable History */}
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <CardTitle className="text-lg">Spend Ledger & History</CardTitle>
-                    <CardDescription>
+                    <CardTitle className="text-base font-bold text-slate-900">Spend History & Ledger</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">
                       {filteredEntries.length
                         ? `Showing ${filteredEntries.length} of ${entries.length} entries`
                         : entries.length
-                        ? `No entries match selected date filter (${entries.length} total)`
-                        : "No spends yet."}
+                        ? `No entries for selected filter`
+                        : "No spends logged yet."}
                     </CardDescription>
                   </div>
-                  {/* Date Filter Chips */}
-                  <div className="flex flex-wrap items-center gap-1.5 pt-1 sm:pt-0">
+
+                  {/* Date Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "all" ? "default" : "outline"}
-                      className="h-7 text-xs px-2.5"
+                      variant={spendListFilter === "all" ? "default" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-lg", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("all")}
                     >
                       All
@@ -1923,8 +1456,8 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "today" ? "default" : "outline"}
-                      className="h-7 text-xs px-2.5"
+                      variant={spendListFilter === "today" ? "default" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-lg", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("today")}
                     >
                       Today
@@ -1932,8 +1465,8 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "yesterday" ? "default" : "outline"}
-                      className="h-7 text-xs px-2.5"
+                      variant={spendListFilter === "yesterday" ? "default" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-lg", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("yesterday")}
                     >
                       Yesterday
@@ -1941,8 +1474,8 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "custom" ? "default" : "outline"}
-                      className="h-7 text-xs px-2.5"
+                      variant={spendListFilter === "custom" ? "default" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-lg", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => {
                         setSpendListFilter("custom");
                         if (!spendListCustomDate) setSpendListCustomDate(getLocalDateString());
@@ -1953,35 +1486,26 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
-                {/* Custom Date Selector Input */}
                 {spendListFilter === "custom" && (
                   <div className="pt-2">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor="customFilterDate" className="text-xs text-muted-foreground shrink-0">
-                        Filter by date:
-                      </Label>
-                      <Input
-                        id="customFilterDate"
-                        type="date"
-                        max={getLocalDateString()}
-                        value={spendListCustomDate}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          const today = getLocalDateString();
-                          setSpendListCustomDate(val > today ? today : val);
-                        }}
-                        className="h-8 text-xs max-w-[180px]"
-                      />
-                    </div>
+                    <Input
+                      type="date"
+                      max={getLocalDateString()}
+                      value={spendListCustomDate}
+                      onChange={(e) => {
+                        const val = e.target.value;
+                        const today = getLocalDateString();
+                        setSpendListCustomDate(val > today ? today : val);
+                      }}
+                      className="h-8 text-xs bg-white max-w-[180px]"
+                    />
                   </div>
                 )}
               </CardHeader>
-              <CardContent className="p-4 pt-2">
+              <CardContent className="p-4 sm:p-5 pt-2">
                 {filteredEntries.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-white/10 p-6 text-center text-sm text-muted-foreground">
-                    {entries.length === 0
-                      ? "Your spend list is empty. The first entry will start the safe-zone meter."
-                      : "No spend entries logged for the selected date filter."}
+                  <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
+                    No spend entries found for the selected filter.
                   </div>
                 ) : (
                   <div className="space-y-2">
@@ -1997,24 +1521,24 @@ export function SafeSpendApp() {
                         <div
                           key={entry.id}
                           className={cn(
-                            "flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors",
-                            isEditingThis ? "border-amber-400 bg-amber-500/10 ring-1 ring-amber-400/50" : "border-white/10",
+                            "flex items-center justify-between gap-3 rounded-xl border p-3 transition-colors bg-white",
+                            isEditingThis ? "border-amber-400 bg-amber-50 ring-1 ring-amber-400/50" : "border-slate-200 hover:bg-slate-50/80",
                           )}
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium">{displayName}</p>
-                            <p className="text-xs text-muted-foreground">
-                              {categoryLabel} · {method} · <span className="font-mono text-foreground/80">{entry.date}</span>
+                            <p className="truncate text-sm font-bold text-slate-900">{displayName}</p>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {categoryLabel} · {method} · <span className="font-mono text-slate-700">{entry.date}</span>
                             </p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <p className="font-mono text-sm font-semibold mr-1">{formatInr(entry.amount)}</p>
+                            <p className="font-mono text-sm font-black text-slate-900 mr-1">{formatInr(entry.amount)}</p>
                             <Button
                               aria-label="Edit spend entry"
                               size="icon"
                               type="button"
                               variant="ghost"
-                              className="size-8 text-muted-foreground hover:text-amber-300 hover:bg-amber-400/10"
+                              className="size-8 text-slate-400 hover:text-amber-700 hover:bg-amber-100"
                               onClick={() => startEditingEntry(entry)}
                             >
                               <Pencil className="size-3.5" />
@@ -2024,7 +1548,7 @@ export function SafeSpendApp() {
                               size="icon"
                               type="button"
                               variant="ghost"
-                              className="size-8 text-muted-foreground hover:text-red-400 hover:bg-red-400/10"
+                              className="size-8 text-slate-400 hover:text-red-600 hover:bg-red-100"
                               onClick={() => {
                                 if (editingEntryId === entry.id) cancelEditingEntry();
                                 setEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -2042,375 +1566,113 @@ export function SafeSpendApp() {
             </Card>
           </TabsContent>
 
-          {/* TAB 4: MULTI-MONTH RUNWAY (2026 - 2028) */}
+          {/* TAB 4: RUNWAY & TIMELINE */}
           <TabsContent value="runway" className="mt-4 space-y-4">
-            <Card className="overflow-hidden border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Landmark className="size-4" /> Salary-only Runway & Roadmap to Zero EMI
-                </CardTitle>
-                <CardDescription>
-                  Shows month-by-month trajectory until 100% of tracked loans expire.
-                </CardDescription>
+            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <CardHeader className="p-4 sm:p-5 pb-2">
+                <CardTitle className="text-base font-bold text-slate-900">Salary-Only Runway Forecast</CardTitle>
+                <CardDescription className="text-xs text-slate-500">Trajectory towards Zero EMI freedom.</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-3 p-4 pt-2">
+              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground">Future living budget</p>
-                    <p className="mt-1 font-mono text-lg">{formatInr(octoberSeedData.futureMonthlyLivingBudget)}</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Living budget</p>
+                    <p className="mt-1 font-mono text-base font-bold text-slate-900">{formatInr(octoberSeedData.futureMonthlyLivingBudget)}</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground">Zero EMI month</p>
-                    <p className="mt-1 font-mono text-lg">{firstZeroEmiMonth?.label ?? "TBD"}</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Zero EMI Month</p>
+                    <p className="mt-1 font-mono text-base font-bold text-indigo-700">{firstZeroEmiMonth?.label ?? "TBD"}</p>
                   </div>
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground">Free cash (&gt;₹20k)</p>
-                    <p className="mt-1 font-mono text-lg">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} months</p>
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-semibold">Free Months (&gt;₹20k)</p>
+                    <p className="mt-1 font-mono text-base font-bold text-emerald-700">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} mo</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
-
-            <div className="space-y-3">
-              {monthPreviews.map((preview) => (
-                <Card
-                  key={preview.month}
-                  className={cn(
-                    "border-white/10 bg-card/80 shadow-none transition hover:border-white/20 cursor-pointer",
-                    selectedMonth === preview.month && "border-emerald-500/50 bg-emerald-500/5 ring-1 ring-emerald-500/30",
-                  )}
-                  onClick={() => setSelectedMonth(preview.month)}
-                >
-                  <CardContent className="space-y-3 p-4">
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="text-lg font-semibold tracking-tight">{preview.label}</p>
-                          {selectedMonth === preview.month && (
-                            <Badge className="bg-emerald-600 text-[10px] px-1.5 py-0">Active View</Badge>
-                          )}
-                        </div>
-                        <p className="text-xs text-muted-foreground">{preview.milestone}</p>
-                      </div>
-                      <ForecastBadge status={preview.status} />
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 text-xs sm:grid-cols-6">
-                      <div className="rounded-lg border border-white/10 p-2">
-                        <p className="text-muted-foreground text-[10px]">Salary</p>
-                        <p className="mt-1 font-mono text-xs font-semibold">{formatInr(preview.salaryIncome)}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/10 p-2">
-                        <p className="text-muted-foreground text-[10px]">My EMI</p>
-                        <p className="mt-1 font-mono text-xs font-semibold">{formatInr(preview.personalEmis)}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/10 p-2">
-                        <p className="text-muted-foreground text-[10px]">Pay Venkat</p>
-                        <p className="mt-1 font-mono text-xs font-semibold">{formatInr(preview.venkatPayableEmis)}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/10 p-2">
-                        <p className="text-muted-foreground text-[10px]">Living</p>
-                        <p className="mt-1 font-mono text-xs font-semibold">{formatInr(preview.livingBudget)}</p>
-                      </div>
-                      <div className="rounded-lg border border-white/10 p-2">
-                        <p className="text-muted-foreground text-[10px]">Buffer</p>
-                        <p className="mt-1 font-mono text-xs font-semibold">{formatInr(preview.bufferTarget)}</p>
-                      </div>
-                      <div className="rounded-lg border border-emerald-500/20 bg-emerald-500/10 p-2">
-                        <p className="text-emerald-300 text-[10px]">Surplus</p>
-                        <p className="mt-1 font-mono text-xs font-bold text-emerald-400">{formatInr(preview.youKeepThisMonth)}</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
           </TabsContent>
 
-          {/* TAB 5: EMIs DIRECTORY */}
+          {/* TAB 5: EMIS LEDGER */}
           <TabsContent value="emis" className="mt-4 space-y-4">
-            <Alert className="border-sky-500/20 bg-sky-500/10">
-              <TrendingDown className="size-4" />
-              <AlertTitle>EMI classification & tracking overview</AlertTitle>
-              <AlertDescription>
-                Personal EMIs and Pay-to-Venkat EMIs are outgoing from your salary. The EMIs on your name for Venkat ({formatInr(monthVenkatDebitOnNameTotal)}) debit from your bank account and are reimbursed by Venkat before due dates.
-              </AlertDescription>
-            </Alert>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-sm font-bold text-slate-900">Personal EMIs</CardTitle>
+                  <CardDescription className="text-xs font-mono font-bold text-indigo-600">{formatInr(monthPersonalEmisTotal)}/mo</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-2">
+                  {currentPersonalEmis.map((e) => (
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <TrendingDown className="size-4" /> My personal EMIs
-                </CardTitle>
-                <CardDescription>Only the EMIs that are purely yours. Total: {formatInr(sumAmounts(octoberSeedData.personalEmis))} / month</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                {octoberSeedData.personalEmis.map((emi) => (
-                  <LineItem key={emi.id} name={emi.name} value={formatInr(emi.amount)} helper={`Ends ${emi.ends}`} />
-                ))}
-              </CardContent>
-            </Card>
+              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Payable EMIs</CardTitle>
+                  <CardDescription className="text-xs font-mono font-bold text-amber-700">{formatInr(monthVenkatPayableTotal)}/mo</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-2">
+                  {currentVenkatPayableEmis.map((e) => (
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
 
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Bike className="size-4" /> I pay Venkat monthly
-                </CardTitle>
-                <CardDescription>These are the EMI amounts you send to Venkat. Total: {formatInr(sumAmounts(octoberSeedData.venkatPayableEmis))} / month</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                {octoberSeedData.venkatPayableEmis.map((emi) => (
-                  <LineItem key={emi.id} name={emi.name} value={formatInr(emi.amount)} helper={`Ends ${emi.ends}`} />
-                ))}
-              </CardContent>
-            </Card>
-
-            <Card className="border-white/10 shadow-none">
-              <CardHeader className="p-4 pb-2">
-                <div className="flex items-center justify-between gap-2">
-                  <CardTitle className="flex items-center gap-2 text-lg">
-                    <Bike className="size-4" /> Venkat pays me monthly (statement tracker)
-                  </CardTitle>
-                  <Badge variant="outline" className="border-amber-500/30 bg-amber-500/10 text-amber-300 text-[10px]">
-                    Reimbursement
-                  </Badge>
-                </div>
-                <CardDescription>
-                  Loans on your name that auto-debit your bank. Track them here to tell Venkat to reimburse before due dates.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 pt-2">
-                {octoberSeedData.venkatReceivableEmis.map((emi) => (
-                  <LineItem key={emi.id} name={emi.name} value={formatInr(emi.amount)} helper={emi.note ? `${emi.ends} · ${emi.note}` : `Ends ${emi.ends}`} />
-                ))}
-              </CardContent>
-            </Card>
-
-            <Button className="w-full" type="button" variant="outline" onClick={resetLocalData}>
-              <RefreshCcw className="size-4 mr-2" /> Reset local app data
-            </Button>
+              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+                <CardHeader className="p-4">
+                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Receivable (On Name)</CardTitle>
+                  <CardDescription className="text-xs font-mono font-bold text-sky-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</CardDescription>
+                </CardHeader>
+                <CardContent className="p-4 pt-0 space-y-2">
+                  {currentVenkatOnYourNameEmis.map((e) => (
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-lg bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
-          {/* TAB 6: CREDIT CARD OPTIMIZER & LIMIT MULTIPLIER */}
+          {/* TAB 6: CARDS DASHBOARD */}
           <TabsContent value="cards" className="mt-4 space-y-4">
-            {/* Header / Strategy Mode Banner */}
-            <Card className="border-white/10 shadow-none overflow-hidden">
-              <CardHeader className="p-4 pb-2 bg-gradient-to-r from-sky-500/10 via-emerald-500/5 to-transparent">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Sparkles className="size-4 text-emerald-400" />
-                      <CardTitle className="text-lg">Credit Profile & Limit Multiplier Suite</CardTitle>
-                    </div>
-                    <CardDescription>
-                      Master strategy for 800+ CIBIL score & automatic limit increases
-                    </CardDescription>
-                  </div>
-                  <Badge variant="outline" className="border-emerald-500/30 bg-emerald-500/10 text-emerald-300 text-xs w-fit">
-                    Target: 800+ CIBIL Profile
-                  </Badge>
-                </div>
-              </CardHeader>
-
-              <CardContent className="space-y-3.5 p-4 pt-2">
-                {/* Aggregate Limit & Utilization Speedometer */}
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 text-xs">
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground text-[10px]">Combined Credit Limit</p>
-                    <p className="mt-1 font-mono text-base font-bold text-foreground">{formatInr(82000)}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">3 Active Cards</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground text-[10px]">Current Available</p>
-                    <p className="mt-1 font-mono text-base font-bold text-emerald-300">{formatInr(57561)}</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">70.2% Available</p>
-                  </div>
-                  <div className="rounded-xl border border-white/10 bg-muted/40 p-3">
-                    <p className="text-muted-foreground text-[10px]">September Strategy</p>
-                    <p className="mt-1 font-mono text-base font-bold text-amber-300">100% Freeze</p>
-                    <p className="text-[10px] text-muted-foreground mt-0.5">₹0 Card Usage</p>
-                  </div>
-                  <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-3">
-                    <p className="text-emerald-300 text-[10px]">Future Safe Monthly Cap</p>
-                    <p className="mt-1 font-mono text-base font-bold text-emerald-400">{formatInr(10000)}/mo</p>
-                    <p className="text-[10px] text-emerald-300/80 mt-0.5">12.2% Sweet Spot</p>
-                  </div>
-                </div>
-
-                {/* Strategy Phase Guidance (Von Restorff Effect & Law of Common Region) */}
-                <Alert className={cn(
-                  "border",
-                  isInitialCleanupMonth
-                    ? "border-amber-500/30 bg-amber-500/10 text-amber-100"
-                    : "border-emerald-500/30 bg-emerald-500/10 text-emerald-100",
-                )}>
-                  <ShieldAlert className="size-4" />
-                  <AlertTitle className="font-semibold">
-                    {isInitialCleanupMonth
-                      ? "Phase 1 (Sep – Oct 2026): Total Freeze & Limit Restoration"
-                      : "Phase 2 (Nov 2026 Onward): The 12% Sweet Spot Limit Multiplier"}
-                  </AlertTitle>
-                  <AlertDescription className="mt-1 text-xs leading-relaxed text-muted-foreground">
-                    {isInitialCleanupMonth ? (
-                      <>
-                        <strong className="text-amber-200">Rule: ₹0 new card usage.</strong> Axis is at 50% utilization (penalty zone) and HDFC is at 37.5%. Clearing the ₹20,000 statement in October restores 100% of limits and triggers an immediate 25–40 point CIBIL score jump!
-                      </>
-                    ) : (
-                      <>
-                        <strong className="text-emerald-200">Optimal Spend: ₹10,000 / month across all cards.</strong> This maintains 12.2% utilization (the golden zone for automatic credit limit enhancements and pre-approved zero-fee upgrades).
-                      </>
-                    )}
-                  </AlertDescription>
-                </Alert>
-              </CardContent>
-            </Card>
-
-            {/* CARD-BY-CARD EXACT SPEND ALLOCATION (Hick's Law & Law of Proximity) */}
-            <div className="space-y-3">
-              <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground px-1">
-                Exact Card-by-Card Spend Allocation (From Nov 2026 Onward)
-              </p>
-
-              {/* CARD 1: HDFC BANK CREDIT CARD */}
-              <Card className="border-sky-500/30 bg-card shadow-none overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-sky-300">1. HDFC Bank Credit Card</span>
-                        <Badge variant="outline" className="border-sky-500/30 text-sky-200 text-[10px] px-1.5 py-0">
-                          Primary Card
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {octoberSeedData.cards.map((card) => {
+                const cardStatus = getCardUsageStatus(card);
+                return (
+                  <Card key={card.name} className="border-slate-200 shadow-sm rounded-2xl bg-white">
+                    <CardHeader className="p-4">
+                      <div className="flex justify-between items-center">
+                        <CardTitle className="text-base font-bold text-slate-900">{card.name}</CardTitle>
+                        <Badge variant="outline" className={cn("text-[10px] font-bold", cardStatus.status === "freeze" ? "border-rose-300 bg-rose-100 text-rose-800" : "border-emerald-300 bg-emerald-100 text-emerald-800")}>
+                          {cardStatus.status === "freeze" ? "FREEZE" : "SAFE"}
                         </Badge>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Credit Limit: <span className="font-mono font-semibold text-foreground">{formatInr(40000)}</span> · Available: <span className="font-mono">{formatInr(25000)}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground uppercase">Safe Monthly Cap</p>
-                      <p className="font-mono text-lg font-black text-sky-300">{formatInr(6000)}</p>
-                      <p className="text-[10px] text-emerald-400 font-semibold">15.0% Utilization</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-sky-500/5 border border-sky-500/15 p-2.5 space-y-1 text-xs">
-                    <p className="font-semibold text-sky-200">🛒 Best Category to Route: Fuel & Grocery Purchases</p>
-                    <p className="text-muted-foreground text-[11px] leading-relaxed">
-                      • Spend ₹3,000 on Fuel + ₹3,000 on Groceries monthly.<br />
-                      • <strong>Limit Growth Strategy:</strong> HDFC algorithms trigger automatic limit increases (up to ₹75,000–₹1,00,000) every 6–9 months when card utilization remains steady at 12–15% and paid 100% in full.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* CARD 2: YES BANK CREDIT CARD */}
-              <Card className="border-emerald-500/30 bg-card shadow-none overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-emerald-300">2. YES Bank Credit Card</span>
-                        <Badge variant="outline" className="border-emerald-500/30 text-emerald-200 text-[10px] px-1.5 py-0">
-                          Utility & Bills
-                        </Badge>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0 space-y-3">
+                      <div>
+                        <div className="flex justify-between text-xs font-semibold text-slate-600 mb-1">
+                          <span>Limit Utilized</span>
+                          <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
+                        </div>
+                        <Progress value={cardStatus.utilization * 100} className="h-2 bg-slate-100" />
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Credit Limit: <span className="font-mono font-semibold text-foreground">{formatInr(27000)}</span> · Available: <span className="font-mono">{formatInr(25061)}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground uppercase">Safe Monthly Cap</p>
-                      <p className="font-mono text-lg font-black text-emerald-300">{formatInr(2500)}</p>
-                      <p className="text-[10px] text-emerald-400 font-semibold">9.2% Utilization</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-emerald-500/5 border border-emerald-500/15 p-2.5 space-y-1 text-xs">
-                    <p className="font-semibold text-emerald-200">⚡ Best Category to Route: Electricity, Gym, & Subscriptions</p>
-                    <p className="text-muted-foreground text-[11px] leading-relaxed">
-                      • Set up autopay for your Gym partial (₹2,500) or Room Electricity bills.<br />
-                      • <strong>Limit Growth Strategy:</strong> Consistent recurring utility billing builds an unbroken 100% on-time payment track record on CIBIL.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* CARD 3: AXIS BANK CREDIT CARD */}
-              <Card className="border-violet-500/30 bg-card shadow-none overflow-hidden">
-                <CardContent className="p-4 space-y-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-violet-300">3. Axis Bank Credit Card</span>
-                        <Badge variant="outline" className="border-violet-500/30 text-violet-200 text-[10px] px-1.5 py-0">
-                          Dining & Online
-                        </Badge>
+                      <div className="flex justify-between text-xs font-medium text-slate-500">
+                        <span>Used: {formatInr(cardStatus.used)}</span>
+                        <span>Available: {formatInr(card.available)}</span>
                       </div>
-                      <p className="text-xs text-muted-foreground mt-0.5">
-                        Credit Limit: <span className="font-mono font-semibold text-foreground">{formatInr(15000)}</span> · Available: <span className="font-mono">{formatInr(7500)}</span>
-                      </p>
-                    </div>
-                    <div className="text-right">
-                      <p className="text-[10px] text-muted-foreground uppercase">Safe Monthly Cap</p>
-                      <p className="font-mono text-lg font-black text-violet-300">{formatInr(1500)}</p>
-                      <p className="text-[10px] text-emerald-400 font-semibold">10.0% Utilization</p>
-                    </div>
-                  </div>
-
-                  <div className="rounded-lg bg-violet-500/5 border border-violet-500/15 p-2.5 space-y-1 text-xs">
-                    <p className="font-semibold text-violet-200">🍽️ Best Category to Route: Dining, Food Delivery, or Small Online Buys</p>
-                    <p className="text-muted-foreground text-[11px] leading-relaxed">
-                      • <strong>Crucial Warning:</strong> Because Axis limit is ₹15,000, spending even ₹4,500 exceeds 30% utilization and hurts your score. Keep spend capped strictly at ₹1,500.<br />
-                      • <strong>Limit Growth Strategy:</strong> Keeping Axis under ₹1,500 prompts Axis to upgrade your limit to ₹40,000–₹50,000.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* INTEGRATION WITH MONTHLY LIVING BUDGET (Law of Closure & Prägnanz) */}
-            <div className="rounded-2xl border border-white/10 bg-muted/20 p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-xs font-bold uppercase tracking-wider text-foreground">
-                  Budget Substitution Breakdown (Zero Extra Expense)
-                </p>
-                <Badge variant="outline" className="border-emerald-500/30 text-emerald-300 text-[10px]">
-                  Inside Living Budget
-                </Badge>
-              </div>
-
-              <p className="text-xs text-muted-foreground leading-relaxed">
-                Card spending is <strong>never additional money</strong>. You simply route ₹10,000 of your existing ₹15,500 living expenses through cards to harvest points and boost CIBIL, then settle 100% on Day 1 from your salary:
-              </p>
-
-              <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                <div className="rounded-lg border border-white/10 bg-card/60 p-2.5">
-                  <p className="text-muted-foreground text-[10px]">Total Living Budget</p>
-                  <p className="mt-1 font-mono font-bold text-foreground text-sm">{formatInr(15500)}</p>
-                </div>
-                <div className="rounded-lg border border-sky-500/20 bg-sky-500/10 p-2.5">
-                  <p className="text-sky-200 text-[10px]">Routed via 3 Cards</p>
-                  <p className="mt-1 font-mono font-bold text-sky-300 text-sm">{formatInr(10000)}</p>
-                </div>
-                <div className="rounded-lg border border-white/10 bg-card/60 p-2.5">
-                  <p className="text-muted-foreground text-[10px]">Remaining UPI / Cash</p>
-                  <p className="mt-1 font-mono font-bold text-foreground text-sm">{formatInr(5500)}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* THE 4 PILLARS FOR 800+ CIBIL SCORE & RAPID LIMIT DOUBLING */}
-            <div className="rounded-2xl border border-emerald-500/20 bg-emerald-500/5 p-4 space-y-2.5 text-xs">
-              <div className="flex items-center gap-2">
-                <Sparkles className="size-4 text-emerald-400" />
-                <p className="font-bold text-emerald-300">The 4 Golden Rules for Rapid Limit Doubling</p>
-              </div>
-              <ul className="space-y-1.5 text-muted-foreground text-[11px] leading-relaxed pl-1">
-                <li>• <strong>1. The 15% Sweet Spot:</strong> Never let any single card statement exceed 15–20% of its limit.</li>
-                <li>• <strong>2. 100% Total Amount Due Payment:</strong> Never pay only &quot;Minimum Due&quot; (which triggers 42% APR interest and penalizes CIBIL).</li>
-                <li>• <strong>3. Zero Rolling Revolving Balance:</strong> Pay statements before the due date so credit bureau reports 0 overdue days.</li>
-                <li>• <strong>4. 6-Month Review Timing:</strong> After 6 months of steady Phase 2 usage (around May 2027), request limit enhancements directly via HDFC/Axis NetBanking apps.</li>
-              </ul>
+                    </CardContent>
+                  </Card>
+                );
+              })}
             </div>
           </TabsContent>
         </Tabs>
@@ -2418,4 +1680,3 @@ export function SafeSpendApp() {
     </main>
   );
 }
-
