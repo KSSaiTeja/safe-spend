@@ -56,6 +56,15 @@ import {
 } from "@heroui/react";
 
 import {
+  deleteIncomeFromDb,
+  deleteSpendFromDb,
+  fetchIncomesFromDb,
+  fetchSpendsFromDb,
+  isSupabaseConfigured,
+  saveIncomeToDb,
+  saveSpendToDb,
+} from "@/lib/db";
+import {
   addMonthsToDate,
   calculateMonthlyPlan,
   calculateSafeSpendPace,
@@ -252,6 +261,17 @@ export function SafeSpendApp() {
   useEffect(() => {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
+
+  // Initial cloud database sync if Supabase environment variables are provided
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetchSpendsFromDb().then((dbSpends) => {
+        if (dbSpends && dbSpends.length > 0) {
+          setEntries(dbSpends);
+        }
+      });
+    }
+  }, []);
 
   // Dynamically auto-assign default card when switching payment method to a card
   useEffect(() => {
@@ -660,6 +680,9 @@ export function SafeSpendApp() {
 
   function deleteSpendEntry(entryId: string) {
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
+    if (isSupabaseConfigured) {
+      deleteSpendFromDb(entryId);
+    }
   }
 
   function addSpend(event: FormEvent<HTMLFormElement>) {
@@ -673,21 +696,21 @@ export function SafeSpendApp() {
     const isCreditCardPayment = paidBy === "hdfc" || paidBy === "axis" || paidBy === "yes-bank";
 
     if (editingEntryId) {
+      const updatedEntry: SpendEntry = {
+        id: editingEntryId,
+        date: targetDate,
+        amount: Math.round(parsedAmount),
+        categoryId,
+        paidBy,
+        cardId: isCreditCardPayment ? selectedCardId : undefined,
+        note: note.trim() || undefined,
+      };
       setEntries((current) =>
-        current.map((item) =>
-          item.id === editingEntryId
-            ? {
-                ...item,
-                date: targetDate,
-                amount: Math.round(parsedAmount),
-                categoryId,
-                paidBy,
-                cardId: isCreditCardPayment ? selectedCardId : undefined,
-                note: note.trim() || undefined,
-              }
-            : item,
-        ),
+        current.map((item) => (item.id === editingEntryId ? updatedEntry : item)),
       );
+      if (isSupabaseConfigured) {
+        saveSpendToDb(updatedEntry);
+      }
       setEditingEntryId(null);
     } else {
       const entry: SpendEntry = {
@@ -700,6 +723,9 @@ export function SafeSpendApp() {
         note: note.trim() || undefined,
       };
       setEntries((current) => [entry, ...current]);
+      if (isSupabaseConfigured) {
+        saveSpendToDb(entry);
+      }
     }
 
     setAmount("");

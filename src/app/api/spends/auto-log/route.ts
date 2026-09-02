@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { saveSpendToDb } from "@/lib/db";
 
 export type AutoParsedSpend = {
   amount: number;
@@ -133,6 +134,9 @@ export async function POST(request: Request) {
       paidBy: parsed.paidBy,
       note: parsed.note,
     };
+
+    // Auto-save to cloud PostgreSQL database if configured
+    await saveSpendToDb(newEntry);
 
     return NextResponse.json({
       success: true,
