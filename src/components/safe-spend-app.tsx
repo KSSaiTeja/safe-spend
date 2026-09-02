@@ -28,6 +28,7 @@ import {
   TrendingUp,
   UserCheck,
   Wallet,
+  X,
   Zap,
 } from "lucide-react";
 
@@ -683,201 +684,230 @@ export function SafeSpendApp() {
 
   return (
     <main className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans pb-20">
-      {/* Top Finexy Navigation Bar */}
-      <header className="sticky top-0 z-30 bg-white/90 border-b border-slate-200/70 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-8">
-        <div className="mx-auto max-w-6xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          {/* Logo & Navigation Pills */}
-          <div className="flex items-center gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="flex size-9 items-center justify-center rounded-2xl bg-[#ff5c38] text-white shadow-sm shadow-[#ff5c38]/30">
+      {/* Top Mobile-First Navigation Header */}
+      <header className="sticky top-0 z-30 bg-white/95 border-b border-slate-200/80 px-3 py-2.5 backdrop-blur-md shadow-2xs sm:px-8 sm:py-3">
+        <div className="mx-auto max-w-6xl space-y-2 sm:space-y-0 sm:flex sm:items-center sm:justify-between">
+          {/* Mobile Header Row 1: Logo & Date Action Pills */}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="flex size-8 sm:size-9 items-center justify-center rounded-2xl bg-[#ff5c38] text-white shadow-sm shadow-[#ff5c38]/30 shrink-0">
                 <Landmark className="size-4" />
               </div>
-              <span className="text-lg font-black tracking-tight text-slate-900">Finexy<span className="text-[#ff5c38]">.</span></span>
+              <span className="text-base sm:text-lg font-black tracking-tight text-slate-900">Finexy<span className="text-[#ff5c38]">.</span></span>
             </div>
 
-            {/* Header Navigation Pills (Finexy style) */}
-            <nav className="hidden md:flex items-center gap-1 rounded-full bg-slate-100/90 p-1 border border-slate-200/60">
+            {/* Date & Month Action Pills */}
+            <div className="flex items-center gap-1.5">
+              {/* Primary Date Picker Button */}
               <button
                 type="button"
-                onClick={() => setActiveTab("spend")}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
-                  activeTab === "spend" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                )}
+                onClick={() => setShowCalendarPopover(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer active:scale-95 transition-all"
               >
-                Spend Tracker
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("plan")}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
-                  activeTab === "plan" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                )}
-              >
-                Overview & Plan
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("invest")}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
-                  activeTab === "invest" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                )}
-              >
-                Invest
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("emis")}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
-                  activeTab === "emis" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                )}
-              >
-                EMIs
-              </button>
-              <button
-                type="button"
-                onClick={() => setActiveTab("cards")}
-                className={cn(
-                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
-                  activeTab === "cards" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                )}
-              >
-                Cards
-              </button>
-            </nav>
-          </div>
-
-          {/* Right Header Action Cluster */}
-          <div className="flex items-center gap-2">
-            {/* Primary Date Picker Pill */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowCalendarPopover(!showCalendarPopover)}
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer"
-              >
-                <CalendarIcon className="size-3.5 text-[#ff5c38]" />
-                <span>{formatDateFormatted(spendDate)}</span>
-                <ChevronDown className="size-3 text-slate-400" />
+                <CalendarIcon className="size-3.5 text-[#ff5c38] shrink-0" />
+                <span className="truncate max-w-[130px] sm:max-w-none">{formatDateFormatted(spendDate)}</span>
+                <ChevronDown className="size-3 text-slate-400 shrink-0" />
               </button>
 
-              {/* Custom Popover Calendar */}
-              {showCalendarPopover && (
-                <div className="absolute right-0 top-10 z-50 w-72 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl space-y-3">
-                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-extrabold text-slate-900">Select Spend Date</span>
-                    <button
-                      type="button"
-                      className="text-xs text-slate-400 hover:text-slate-700 font-bold"
-                      onClick={() => setShowCalendarPopover(false)}
-                    >
-                      Done
-                    </button>
-                  </div>
-
-                  <div className="flex gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSpendDate(getLocalDateString());
-                        setShowCalendarPopover(false);
-                      }}
-                      className="flex-1 py-1 px-2 rounded-lg text-[11px] font-extrabold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
-                    >
-                      Today
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSpendDate(getYesterdayDateString());
-                        setShowCalendarPopover(false);
-                      }}
-                      className="flex-1 py-1 px-2 rounded-lg text-[11px] font-extrabold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
-                    >
-                      Yesterday
-                    </button>
-                  </div>
-
-                  <div className="space-y-1">
-                    <div className="grid grid-cols-7 text-center text-[10px] font-extrabold text-slate-400 pb-1">
-                      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
-                    </div>
-                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
-                      {Array.from({ length: calendarDays.startDayOfWeek }).map((_, idx) => (
-                        <div key={`empty-${idx}`} />
-                      ))}
-                      {calendarDays.days.map((item) => (
-                        <button
-                          key={item.dateStr}
-                          type="button"
-                          disabled={item.isDisabled}
-                          onClick={() => {
-                            setSpendDate(item.dateStr);
-                            setShowCalendarPopover(false);
-                          }}
-                          className={cn(
-                            "size-7 rounded-lg text-xs font-bold flex items-center justify-center transition-all",
-                            item.isSelected && "bg-[#ff5c38] text-white shadow-xs",
-                            !item.isSelected && item.isToday && "border border-[#ff5c38] text-[#ff5c38] bg-orange-50 font-bold",
-                            !item.isSelected && !item.isToday && !item.isDisabled && "text-slate-800 hover:bg-slate-100",
-                            item.isDisabled && "text-slate-300 opacity-40 cursor-not-allowed",
-                          )}
-                        >
-                          {item.day}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Custom Month Dropdown Pill */}
-            <div className="relative">
+              {/* Month Selector Pill */}
               <button
                 type="button"
-                onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-xs font-extrabold text-slate-900 hover:bg-slate-200 cursor-pointer"
+                onClick={() => setShowMonthDropdown(true)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-xs font-extrabold text-slate-900 hover:bg-slate-200 cursor-pointer shrink-0"
               >
                 <span>{formatMonthLabel(selectedMonth)}</span>
                 <ChevronDown className="size-3 text-slate-500" />
               </button>
-
-              {showMonthDropdown && (
-                <div className="absolute right-0 top-10 z-50 w-52 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl space-y-0.5">
-                  {allForecastMonths.map((m) => (
-                    <button
-                      key={m.value}
-                      type="button"
-                      onClick={() => {
-                        setSelectedMonth(m.value);
-                        setShowMonthDropdown(false);
-                      }}
-                      className={cn(
-                        "w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors",
-                        selectedMonth === m.value ? "bg-slate-900 font-bold text-white" : "text-slate-700 hover:bg-slate-50",
-                      )}
-                    >
-                      <span>{m.label}</span>
-                      {m.value === "2028-05" && <Chip color="accent" size="sm" variant="soft">Zero EMI</Chip>}
-                    </button>
-                  ))}
-                </div>
-              )}
             </div>
           </div>
+
+          {/* Swipeable Mobile Tab Navigation Bar */}
+          <nav className="flex items-center gap-1 overflow-x-auto p-1 bg-slate-100/90 rounded-full border border-slate-200/60 no-scrollbar">
+            <button
+              type="button"
+              onClick={() => setActiveTab("spend")}
+              className={cn(
+                "px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap transition-all shrink-0",
+                activeTab === "spend" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Spend Tracker
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("plan")}
+              className={cn(
+                "px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap transition-all shrink-0",
+                activeTab === "plan" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Overview & Plan
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("invest")}
+              className={cn(
+                "px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap transition-all shrink-0",
+                activeTab === "invest" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Invest
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("emis")}
+              className={cn(
+                "px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap transition-all shrink-0",
+                activeTab === "emis" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              EMIs
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("cards")}
+              className={cn(
+                "px-3.5 py-1 rounded-full text-xs font-extrabold whitespace-nowrap transition-all shrink-0",
+                activeTab === "cards" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Cards
+            </button>
+          </nav>
         </div>
       </header>
 
+      {/* MOBILE-FIRST CALENDAR MODAL OVERLAY */}
+      {showCalendarPopover && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowCalendarPopover(false)}
+          />
+          <div className="relative z-10 w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+              <span className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
+                <CalendarIcon className="size-4 text-[#ff5c38]" /> Select Spend Date
+              </span>
+              <button
+                type="button"
+                className="size-7 rounded-full bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center justify-center text-xs font-bold"
+                onClick={() => setShowCalendarPopover(false)}
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+
+            {/* Quick Date Presets */}
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSpendDate(getLocalDateString());
+                  setShowCalendarPopover(false);
+                }}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all text-center",
+                  spendDate === getLocalDateString() ? "bg-slate-900 text-white shadow-xs" : "bg-slate-100 text-slate-800 hover:bg-slate-200",
+                )}
+              >
+                Today
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setSpendDate(getYesterdayDateString());
+                  setShowCalendarPopover(false);
+                }}
+                className={cn(
+                  "flex-1 py-2 px-3 rounded-xl text-xs font-extrabold transition-all text-center",
+                  spendDate === getYesterdayDateString() ? "bg-slate-900 text-white shadow-xs" : "bg-slate-100 text-slate-800 hover:bg-slate-200",
+                )}
+              >
+                Yesterday
+              </button>
+            </div>
+
+            {/* Month Calendar Grid */}
+            <div className="space-y-1.5">
+              <div className="grid grid-cols-7 text-center text-[11px] font-extrabold text-slate-400 pb-1">
+                <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+              </div>
+              <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                {Array.from({ length: calendarDays.startDayOfWeek }).map((_, idx) => (
+                  <div key={`empty-${idx}`} />
+                ))}
+                {calendarDays.days.map((item) => (
+                  <button
+                    key={item.dateStr}
+                    type="button"
+                    disabled={item.isDisabled}
+                    onClick={() => {
+                      setSpendDate(item.dateStr);
+                      setShowCalendarPopover(false);
+                    }}
+                    className={cn(
+                      "h-9 w-full rounded-xl text-xs font-extrabold flex items-center justify-center transition-all min-h-[36px]",
+                      item.isSelected && "bg-[#ff5c38] text-white shadow-xs",
+                      !item.isSelected && item.isToday && "border border-[#ff5c38] text-[#ff5c38] bg-orange-50 font-bold",
+                      !item.isSelected && !item.isToday && !item.isDisabled && "text-slate-800 hover:bg-slate-100 active:scale-95",
+                      item.isDisabled && "text-slate-300 opacity-40 cursor-not-allowed",
+                    )}
+                  >
+                    {item.day}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MOBILE-FIRST MONTH SELECTOR MODAL OVERLAY */}
+      {showMonthDropdown && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+          <div
+            className="fixed inset-0"
+            onClick={() => setShowMonthDropdown(false)}
+          />
+          <div className="relative z-10 w-full max-w-xs max-h-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl space-y-1">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-2 px-2">
+              <span className="text-xs font-extrabold text-slate-900">Select Forecast Month</span>
+              <button
+                type="button"
+                className="size-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold"
+                onClick={() => setShowMonthDropdown(false)}
+              >
+                <X className="size-3.5" />
+              </button>
+            </div>
+            {allForecastMonths.map((m) => (
+              <button
+                key={m.value}
+                type="button"
+                onClick={() => {
+                  setSelectedMonth(m.value);
+                  setShowMonthDropdown(false);
+                }}
+                className={cn(
+                  "w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors",
+                  selectedMonth === m.value ? "bg-slate-900 font-bold text-white" : "text-slate-700 hover:bg-slate-50",
+                )}
+              >
+                <span>{m.label}</span>
+                {m.value === "2028-05" && <Chip color="accent" size="sm" variant="soft">Zero EMI</Chip>}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main Container */}
-      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 space-y-6">
+      <div className="mx-auto max-w-6xl px-4 py-4 sm:px-8 space-y-5 sm:space-y-6">
         {/* Welcome & Overview Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+            <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
               Good day, Sai 👋
             </h2>
             <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
@@ -889,7 +919,7 @@ export function SafeSpendApp() {
             <Button
               size="sm"
               variant="tertiary"
-              className="h-9 px-3 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-full bg-white border border-slate-200 shadow-2xs"
+              className="h-8 sm:h-9 px-3 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-full bg-white border border-slate-200 shadow-2xs"
               onPress={resetLocalData}
             >
               <RefreshCcw className="mr-1.5 size-3.5 text-slate-400" /> Reset Data
@@ -898,67 +928,67 @@ export function SafeSpendApp() {
         </div>
 
         {/* 4 Finexy Widget Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Featured Coral Orange Card */}
-          <div className="rounded-3xl bg-[#ff5c38] text-white p-5 shadow-sm space-y-3 relative overflow-hidden">
+          <div className="col-span-2 sm:col-span-1 rounded-3xl bg-[#ff5c38] text-white p-4 sm:p-5 shadow-sm space-y-2 sm:space-y-3 relative overflow-hidden">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
-              <span className="rounded-full bg-white/20 p-2 text-white">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
+              <span className="rounded-full bg-white/20 p-1.5 sm:p-2 text-white">
                 <IndianRupee className="size-4" />
               </span>
             </div>
             <div>
-              <p className="text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
-              <p className="text-xs font-semibold text-orange-100 mt-1 flex items-center gap-1">
-                <TrendingUp className="size-3.5 text-white" />
-                <span>Received: {formatInr(monthIncomeReceived)}</span>
+              <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-orange-100 mt-1 flex items-center gap-1">
+                <TrendingUp className="size-3.5 text-white shrink-0" />
+                <span className="truncate">Received: {formatInr(monthIncomeReceived)}</span>
               </p>
             </div>
           </div>
 
           {/* Card 2: Outgoing EMIs */}
-          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+          <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-2 sm:space-y-3">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Outgoing EMIs</span>
-              <span className="rounded-full bg-slate-100 p-2 text-slate-700">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Outgoing EMIs</span>
+              <span className="rounded-full bg-slate-100 p-1.5 sm:p-2 text-slate-700">
                 <CreditCardIcon className="size-4" />
               </span>
             </div>
             <div>
-              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">
+              <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1 truncate">
                 {currentPersonalEmis.length} Personal · {currentVenkatPayableEmis.length} Venkat
               </p>
             </div>
           </div>
 
           {/* Card 3: Live Bank Balance */}
-          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+          <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-2 sm:space-y-3">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Live Bank Balance</span>
-              <span className="rounded-full bg-emerald-50 p-2 text-emerald-600">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Live Bank</span>
+              <span className="rounded-full bg-emerald-50 p-1.5 sm:p-2 text-emerald-600">
                 <Landmark className="size-4" />
               </span>
             </div>
             <div>
-              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(currentLiveBankBalance)}</p>
-              <p className="text-xs font-semibold text-emerald-600 mt-1">
-                {currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety Buffer Intact" : "⚠️ Cash Needed"}
+              <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(currentLiveBankBalance)}</p>
+              <p className="text-[11px] sm:text-xs font-semibold text-emerald-600 mt-1 truncate">
+                {currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety Intact" : "⚠️ Cash Needed"}
               </p>
             </div>
           </div>
 
           {/* Card 4: Required Reserve */}
-          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+          <div className="col-span-2 sm:col-span-1 rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-2 sm:space-y-3">
             <div className="flex justify-between items-start">
-              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Must Keep in Bank</span>
-              <span className="rounded-full bg-blue-50 p-2 text-blue-600">
+              <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">Must Keep</span>
+              <span className="rounded-full bg-blue-50 p-1.5 sm:p-2 text-blue-600">
                 <PiggyBank className="size-4" />
               </span>
             </div>
             <div>
-              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(liveCashNeededInBank)}</p>
-              <p className="text-xs font-medium text-slate-500 mt-1">
+              <p className="text-2xl sm:text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(liveCashNeededInBank)}</p>
+              <p className="text-[11px] sm:text-xs font-medium text-slate-500 mt-1 truncate">
                 Pending: {formatInr(totalRemainingPendingOutflows)} + ₹5k
               </p>
             </div>
@@ -970,25 +1000,25 @@ export function SafeSpendApp() {
           {/* Left Column (8 cols): Quick Spend Logger & Activity Table */}
           <div className="lg:col-span-8 space-y-6">
             {/* Quick Spend Logger Card */}
-            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-5">
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-6 shadow-2xs space-y-4">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900 flex items-center gap-2">
                     {editingEntryId ? (
                       <>
                         <Pencil className="size-4 text-amber-600" /> Edit Transaction
                       </>
                     ) : (
                       <>
-                        <Plus className="size-4 text-[#ff5c38]" /> Quick Add Spend or Debt Payoff
+                        <Plus className="size-4 text-[#ff5c38]" /> Quick Add Spend
                       </>
                     )}
                   </h3>
                   <p className="text-xs font-medium text-slate-500 mt-0.5">
-                    Log spends for <span className="font-extrabold text-slate-900">{formatDateFormatted(spendDate)}</span>.
+                    Logging for <span className="font-extrabold text-slate-900">{formatDateFormatted(spendDate)}</span>.
                   </p>
                 </div>
-                <Chip color="success" size="sm" variant="soft">Instant Sync</Chip>
+                <Chip color="success" size="sm" variant="soft">Live Sync</Chip>
               </div>
 
               <form onSubmit={addSpend} className="space-y-4">
@@ -1011,18 +1041,18 @@ export function SafeSpendApp() {
                     </div>
                   </div>
 
-                  {/* Date Banner */}
+                  {/* Target Date Selector Banner */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-extrabold text-slate-700 block">Target Date</label>
+                    <label className="text-xs font-extrabold text-slate-700 block">Date</label>
                     <div className="flex items-center justify-between h-11 px-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-900">
-                      <span className="flex items-center gap-2">
-                        <CalendarIcon className="size-4 text-[#ff5c38]" />
-                        <span>{formatDateFormatted(spendDate)}</span>
+                      <span className="flex items-center gap-2 truncate">
+                        <CalendarIcon className="size-4 text-[#ff5c38] shrink-0" />
+                        <span className="truncate">{formatDateFormatted(spendDate)}</span>
                       </span>
                       <button
                         type="button"
                         onClick={() => setShowCalendarPopover(true)}
-                        className="text-[11px] font-extrabold text-[#ff5c38] hover:underline"
+                        className="text-[11px] font-extrabold text-[#ff5c38] hover:underline shrink-0 ml-1"
                       >
                         Change
                       </button>
@@ -1030,7 +1060,7 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
-                {/* Custom Category Dropdown Component (Lucide Icons, NO EMOJIS) */}
+                {/* Custom Category Selector Component */}
                 <div className="space-y-1.5 relative">
                   <label className="text-xs font-extrabold text-slate-700 block">Category</label>
                   <button
@@ -1040,77 +1070,90 @@ export function SafeSpendApp() {
                   >
                     <span className="flex items-center gap-2.5 truncate">
                       <selectedCategoryObj.Icon className="size-4 shrink-0 text-slate-700" />
-                      <span className="font-extrabold text-slate-900">{selectedCategoryObj.label}</span>
+                      <span className="font-extrabold text-slate-900 truncate">{selectedCategoryObj.label}</span>
                       {selectedCategoryObj.sub && (
-                        <span className="text-xs text-slate-500 font-normal">({selectedCategoryObj.sub})</span>
+                        <span className="text-xs text-slate-500 font-normal truncate">({selectedCategoryObj.sub})</span>
                       )}
                     </span>
                     <ChevronDown className="size-4 text-slate-400 shrink-0" />
                   </button>
 
-                  {/* Dropdown Popover */}
+                  {/* Category Selection Modal / Popover */}
                   {showCategoryDropdown && (
-                    <div className="absolute left-0 top-16 z-50 w-full max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl space-y-1">
-                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1">Living Expenses</p>
-                      {categoryOptions.map((cat) => {
-                        const IconComponent = cat.icon;
-                        const isSel = categoryId === cat.id;
-                        return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in sm:absolute sm:inset-auto sm:left-0 sm:top-16 sm:w-full">
+                      <div className="fixed inset-0 sm:hidden" onClick={() => setShowCategoryDropdown(false)} />
+                      <div className="relative z-10 w-full max-w-sm sm:max-w-none max-h-80 overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-2xl space-y-1">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-2 px-2 sm:hidden">
+                          <span className="text-xs font-extrabold text-slate-900">Select Category</span>
                           <button
-                            key={cat.id}
                             type="button"
-                            onClick={() => {
-                              setCategoryId(cat.id);
-                              setShowCategoryDropdown(false);
-                            }}
-                            className={cn(
-                              "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
-                              isSel ? "bg-slate-900 text-white" : "text-slate-800 hover:bg-slate-100",
-                            )}
+                            className="size-6 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center text-xs font-bold"
+                            onClick={() => setShowCategoryDropdown(false)}
                           >
-                            <span className="flex items-center gap-2.5">
-                              <IconComponent className={cn("size-4", isSel ? "text-white" : "text-slate-600")} />
-                              <span>{cat.label}</span>
-                            </span>
-                            <span className={cn("text-[11px]", isSel ? "text-slate-300" : "text-slate-500")}>
-                              {cat.budget}
-                            </span>
+                            <X className="size-3.5" />
                           </button>
-                        );
-                      })}
+                        </div>
+                        <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1">Living Expenses</p>
+                        {categoryOptions.map((cat) => {
+                          const IconComponent = cat.icon;
+                          const isSel = categoryId === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setCategoryId(cat.id);
+                                setShowCategoryDropdown(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
+                                isSel ? "bg-slate-900 text-white" : "text-slate-800 hover:bg-slate-100",
+                              )}
+                            >
+                              <span className="flex items-center gap-2.5">
+                                <IconComponent className={cn("size-4", isSel ? "text-white" : "text-slate-600")} />
+                                <span>{cat.label}</span>
+                              </span>
+                              <span className={cn("text-[11px]", isSel ? "text-slate-300" : "text-slate-500")}>
+                                {cat.budget}
+                              </span>
+                            </button>
+                          );
+                        })}
 
-                      {debtPaymentStats.length > 0 && (
-                        <>
-                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1 pt-2">Debt Payoffs</p>
-                          {debtPaymentStats.map((debt) => {
-                            const isSel = categoryId === debt.id;
-                            const DebtIcon = debt.priority === "high" ? AlertCircle : UserCheck;
-                            return (
-                              <button
-                                key={debt.id}
-                                type="button"
-                                onClick={() => {
-                                  setCategoryId(debt.id);
-                                  if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
-                                  setShowCategoryDropdown(false);
-                                }}
-                                className={cn(
-                                  "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
-                                  isSel ? "bg-[#ff5c38] text-white" : "text-slate-800 hover:bg-slate-100",
-                                )}
-                              >
-                                <span className="flex items-center gap-2.5">
-                                  <DebtIcon className={cn("size-4", isSel ? "text-white" : "text-[#ff5c38]")} />
-                                  <span>{debt.name}</span>
-                                </span>
-                                <span className={cn("text-[11px]", isSel ? "text-orange-100" : "text-slate-500")}>
-                                  {debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)}
-                                </span>
-                              </button>
-                            );
-                          })}
-                        </>
-                      )}
+                        {debtPaymentStats.length > 0 && (
+                          <>
+                            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1 pt-2">Debt Payoffs</p>
+                            {debtPaymentStats.map((debt) => {
+                              const isSel = categoryId === debt.id;
+                              const DebtIcon = debt.priority === "high" ? AlertCircle : UserCheck;
+                              return (
+                                <button
+                                  key={debt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCategoryId(debt.id);
+                                    if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
+                                    isSel ? "bg-[#ff5c38] text-white" : "text-slate-800 hover:bg-slate-100",
+                                  )}
+                                >
+                                  <span className="flex items-center gap-2.5">
+                                    <DebtIcon className={cn("size-4", isSel ? "text-white" : "text-[#ff5c38]")} />
+                                    <span>{debt.name}</span>
+                                  </span>
+                                  <span className={cn("text-[11px]", isSel ? "text-orange-100" : "text-slate-500")}>
+                                    {debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -1118,7 +1161,7 @@ export function SafeSpendApp() {
                 {/* Payment Method Selector */}
                 <div className="space-y-1.5">
                   <label className="text-xs font-extrabold text-slate-700 block">Payment Method</label>
-                  <div className="flex flex-wrap gap-1.5 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80">
+                  <div className="flex flex-wrap gap-1 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80">
                     {paymentMethods.map((method) => {
                       const isSelected = paidBy === method.id;
                       return (
@@ -1127,7 +1170,7 @@ export function SafeSpendApp() {
                           type="button"
                           onClick={() => setPaidBy(method.id)}
                           className={cn(
-                            "flex-1 min-w-[75px] py-1.5 px-3 text-xs font-extrabold rounded-xl transition-all text-center",
+                            "flex-1 min-w-[65px] py-1.5 px-2.5 text-xs font-extrabold rounded-xl transition-all text-center",
                             isSelected
                               ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80"
                               : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60",
@@ -1170,10 +1213,10 @@ export function SafeSpendApp() {
             </div>
 
             {/* Finexy Activity Table (Recent Transactions) */}
-            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-6 shadow-2xs space-y-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
-                  <h3 className="text-lg font-extrabold text-slate-900">Recent Transactions</h3>
+                  <h3 className="text-base sm:text-lg font-extrabold text-slate-900">Recent Transactions</h3>
                   <p className="text-xs font-medium text-slate-500">
                     {filteredEntries.length} logged entries
                   </p>
@@ -1181,17 +1224,17 @@ export function SafeSpendApp() {
 
                 {/* Filter & Search Bar */}
                 <div className="flex items-center gap-2">
-                  <div className="relative">
+                  <div className="relative flex-1 sm:flex-none">
                     <Search className="absolute left-3 top-2.5 size-3.5 text-slate-400" />
                     <input
                       placeholder="Search..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
-                      className="h-8 pl-8 pr-3 text-xs bg-slate-100 border border-slate-200/80 rounded-full w-36 focus:outline-none focus:w-48 transition-all"
+                      className="h-8 pl-8 pr-3 text-xs bg-slate-100 border border-slate-200/80 rounded-full w-full sm:w-36 focus:outline-none focus:w-44 transition-all"
                     />
                   </div>
 
-                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full border border-slate-200/80">
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full border border-slate-200/80 shrink-0">
                     <button
                       type="button"
                       onClick={() => setSpendListFilter("all")}
@@ -1237,29 +1280,29 @@ export function SafeSpendApp() {
                       <div
                         key={entry.id}
                         className={cn(
-                          "flex items-center justify-between gap-3 rounded-2xl p-3.5 border transition-all bg-white hover:bg-slate-50/80",
+                          "flex items-center justify-between gap-3 rounded-2xl p-3 sm:p-3.5 border transition-all bg-white hover:bg-slate-50/80",
                           isEditingThis ? "border-amber-300 bg-amber-50/60" : "border-slate-200/80",
                         )}
                       >
-                        <div className="flex items-center gap-3 min-w-0">
-                          <div className={cn("size-9 rounded-2xl flex items-center justify-center shrink-0", iconObj?.color || "bg-slate-100 text-slate-700")}>
+                        <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
+                          <div className={cn("size-8 sm:size-9 rounded-2xl flex items-center justify-center shrink-0", iconObj?.color || "bg-slate-100 text-slate-700")}>
                             <IconComponent className="size-4" />
                           </div>
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-extrabold text-slate-900">{displayName}</p>
-                            <p className="text-xs text-slate-500 font-medium">
+                            <p className="truncate text-xs sm:text-sm font-extrabold text-slate-900">{displayName}</p>
+                            <p className="text-[11px] sm:text-xs text-slate-500 font-medium truncate">
                               {categoryLabel} · <span className="font-semibold text-slate-700">{method}</span> · <span className="font-mono text-slate-500">{entry.date}</span>
                             </p>
                           </div>
                         </div>
 
-                        <div className="flex items-center gap-2 shrink-0">
-                          <p className="font-mono text-base font-black text-slate-900 mr-1">{formatInr(entry.amount)}</p>
+                        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                          <p className="font-mono text-xs sm:text-base font-black text-slate-900 mr-0.5">{formatInr(entry.amount)}</p>
                           <Button
                             aria-label="Edit spend entry"
                             size="sm"
                             variant="ghost"
-                            className="size-8 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-xl min-w-0"
+                            className="size-7 sm:size-8 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-xl min-w-0"
                             onPress={() => startEditingEntry(entry)}
                           >
                             <Pencil className="size-3.5" />
@@ -1268,7 +1311,7 @@ export function SafeSpendApp() {
                             aria-label="Delete spend entry"
                             size="sm"
                             variant="ghost"
-                            className="size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
+                            className="size-7 sm:size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
                             onPress={() => {
                               if (editingEntryId === entry.id) cancelEditingEntry();
                               setEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -1288,10 +1331,10 @@ export function SafeSpendApp() {
           {/* Right Column (4 cols): Credit Cards & Budget Pace */}
           <div className="lg:col-span-4 space-y-6">
             {/* Finexy Style: My Cards Widget */}
-            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-extrabold text-slate-900">My Credit Cards</h3>
-                <span className="text-xs font-bold text-slate-400">Limit Utilization</span>
+                <span className="text-xs font-bold text-slate-400">Limits</span>
               </div>
 
               <div className="space-y-3">
@@ -1301,7 +1344,7 @@ export function SafeSpendApp() {
                     <span className="font-extrabold tracking-wider text-slate-300">HDFC Millennia</span>
                     <Chip color="success" size="sm" variant="soft">Safe Limit</Chip>
                   </div>
-                  <p className="font-mono text-sm font-extrabold tracking-widest text-slate-300">•••• •••• 6782</p>
+                  <p className="font-mono text-xs sm:text-sm font-extrabold tracking-widest text-slate-300">•••• •••• 6782</p>
                   <div className="flex justify-between items-end text-xs pt-1 border-t border-slate-800">
                     <div>
                       <p className="text-[10px] text-slate-400 uppercase font-bold">Used</p>
@@ -1320,7 +1363,7 @@ export function SafeSpendApp() {
                     <span className="font-extrabold tracking-wider text-orange-100">Axis MyZone</span>
                     <Chip color="success" size="sm" variant="soft">Active</Chip>
                   </div>
-                  <p className="font-mono text-sm font-extrabold tracking-widest text-orange-100">•••• •••• 4356</p>
+                  <p className="font-mono text-xs sm:text-sm font-extrabold tracking-widest text-orange-100">•••• •••• 4356</p>
                   <div className="flex justify-between items-end text-xs pt-1 border-t border-white/20">
                     <div>
                       <p className="text-[10px] text-orange-100 uppercase font-bold">Used</p>
@@ -1336,7 +1379,7 @@ export function SafeSpendApp() {
             </div>
 
             {/* Budget Pace Widget */}
-            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-4 sm:p-5 shadow-2xs space-y-4">
               <div className="flex items-center justify-between">
                 <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
                 <Chip color={pace.status === "green" ? "success" : pace.status === "yellow" ? "warning" : "danger"} size="sm" variant="soft">
@@ -1348,7 +1391,7 @@ export function SafeSpendApp() {
               <div className="space-y-3 pt-1">
                 <div>
                   <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
-                    <span>Variable Spend ({dayOfMonth}/30 days)</span>
+                    <span>Variable ({dayOfMonth}/30 days)</span>
                     <span className="font-mono font-black text-slate-900">
                       {formatInr(variableSpent)} / {formatInr(variableBudget)}
                     </span>
