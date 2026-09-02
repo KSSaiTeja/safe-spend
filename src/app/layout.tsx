@@ -27,13 +27,17 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
+import { Providers } from "./providers";
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} light h-full antialiased`}
     >
-      <body className="min-h-full bg-slate-50 text-slate-900">{children}</body>
+      <body className="min-h-full bg-slate-50 text-slate-900">
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

@@ -3,7 +3,6 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowRight,
   Calendar,
   Check,
   ChevronLeft,
@@ -19,21 +18,15 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
+  Button,
   Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { Switch } from "@/components/ui/switch";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+  Chip,
+  Input,
+  Progress,
+  Switch,
+} from "@heroui/react";
+
 import {
   addMonthsToDate,
   calculateMonthlyPlan,
@@ -154,17 +147,16 @@ function StatusBadge({ status }: { status: "green" | "yellow" | "red" }) {
     red: "Over Pace",
   }[status];
 
+  const colorMap = {
+    green: "success" as const,
+    yellow: "warning" as const,
+    red: "danger" as const,
+  };
+
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium border",
-        status === "green" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-        status === "yellow" && "border-amber-200 bg-amber-50 text-amber-800",
-        status === "red" && "border-red-200 bg-red-50 text-red-700",
-      )}
-    >
+    <Chip color={colorMap[status]} size="sm" variant="soft">
       {copy}
-    </span>
+    </Chip>
   );
 }
 
@@ -176,18 +168,17 @@ function ForecastBadge({ status }: { status: "tight" | "stable" | "free" | "emi-
     "emi-zero": "Zero EMI",
   }[status];
 
+  const colorMap = {
+    tight: "warning" as const,
+    stable: "default" as const,
+    free: "success" as const,
+    "emi-zero": "accent" as const,
+  };
+
   return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold border",
-        status === "tight" && "border-amber-200 bg-amber-50 text-amber-800",
-        status === "stable" && "border-slate-200 bg-slate-100 text-slate-700",
-        status === "free" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-        status === "emi-zero" && "border-emerald-300 bg-emerald-100 text-emerald-800 font-bold",
-      )}
-    >
+    <Chip color={colorMap[status]} size="sm" variant={status === "emi-zero" ? "primary" : "soft"}>
       {copy}
-    </span>
+    </Chip>
   );
 }
 
@@ -205,28 +196,26 @@ function MetricCard({
   tone?: "default" | "safe" | "warn" | "danger" | "info";
 }) {
   return (
-    <Card className="border-slate-200 bg-white shadow-xs rounded-xl overflow-hidden">
-      <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
-            <p className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono">{value}</p>
-            <p className="mt-1 text-xs text-slate-600 font-medium">{detail}</p>
-          </div>
-          <div
-            className={cn(
-              "rounded-lg border p-2.5 shrink-0",
-              tone === "default" && "border-slate-200 bg-slate-50 text-slate-700",
-              tone === "safe" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-              tone === "warn" && "border-amber-200 bg-amber-50 text-amber-800",
-              tone === "danger" && "border-red-200 bg-red-50 text-red-700",
-              tone === "info" && "border-slate-200 bg-slate-100 text-slate-700",
-            )}
-          >
-            <Icon className="size-5" />
-          </div>
+    <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden p-4 sm:p-5">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
+          <p className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono">{value}</p>
+          <p className="mt-1 text-xs text-slate-600 font-medium">{detail}</p>
         </div>
-      </CardContent>
+        <div
+          className={cn(
+            "rounded-lg border p-2.5 shrink-0",
+            tone === "default" && "border-slate-200 bg-slate-50 text-slate-700",
+            tone === "safe" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+            tone === "warn" && "border-amber-200 bg-amber-50 text-amber-800",
+            tone === "danger" && "border-red-200 bg-red-50 text-red-700",
+            tone === "info" && "border-slate-200 bg-slate-100 text-slate-700",
+          )}
+        >
+          <Icon className="size-5" />
+        </div>
+      </div>
     </Card>
   );
 }
@@ -706,7 +695,7 @@ export function SafeSpendApp() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl bg-slate-50 text-slate-900 pb-16 font-sans">
-      {/* Clean Fintech Header */}
+      {/* Clean Header with HeroUI Component */}
       <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-2.5">
@@ -716,9 +705,9 @@ export function SafeSpendApp() {
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">SafeSpend</span>
-                <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
+                <Chip color="success" size="sm" variant="soft">
                   Live
-                </span>
+                </Chip>
               </div>
               <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Financial Guardrail</h1>
             </div>
@@ -727,12 +716,12 @@ export function SafeSpendApp() {
           {/* Clean Month Selector */}
           <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <Button
-              size="icon"
+              size="sm"
               variant="ghost"
-              className="size-7 text-slate-600 hover:bg-white rounded-md"
-              disabled={!prevMonth}
-              onClick={() => prevMonth && setSelectedMonth(prevMonth)}
-              title="Previous Month"
+              className="size-7 p-0 text-slate-600 hover:bg-white rounded-md min-w-0"
+              isDisabled={!prevMonth}
+              onPress={() => prevMonth && setSelectedMonth(prevMonth)}
+              aria-label="Previous Month"
             >
               <ChevronLeft className="size-4" />
             </Button>
@@ -750,12 +739,12 @@ export function SafeSpendApp() {
             </select>
 
             <Button
-              size="icon"
+              size="sm"
               variant="ghost"
-              className="size-7 text-slate-600 hover:bg-white rounded-md"
-              disabled={!nextMonth}
-              onClick={() => nextMonth && setSelectedMonth(nextMonth)}
-              title="Next Month"
+              className="size-7 p-0 text-slate-600 hover:bg-white rounded-md min-w-0"
+              isDisabled={!nextMonth}
+              onPress={() => nextMonth && setSelectedMonth(nextMonth)}
+              aria-label="Next Month"
             >
               <ChevronRight className="size-4" />
             </Button>
@@ -783,9 +772,9 @@ export function SafeSpendApp() {
 
           <Button
             size="sm"
-            variant="ghost"
+            variant="tertiary"
             className="h-8 text-xs font-medium text-slate-600 hover:text-slate-900"
-            onClick={resetLocalData}
+            onPress={resetLocalData}
           >
             <RefreshCcw className="mr-1.5 size-3.5" /> Reset Data
           </Button>
@@ -823,102 +812,155 @@ export function SafeSpendApp() {
           />
         </div>
 
-        {/* Clean Segmented Navigation Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1">
-            <TabsTrigger value="plan" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Plan</TabsTrigger>
-            <TabsTrigger value="invest" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-2xs text-slate-600">Invest</TabsTrigger>
-            <TabsTrigger value="spend" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Spend</TabsTrigger>
-            <TabsTrigger value="runway" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Runway</TabsTrigger>
-            <TabsTrigger value="emis" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">EMIs</TabsTrigger>
-            <TabsTrigger value="cards" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Cards</TabsTrigger>
-          </TabsList>
+        {/* Segmented Navigation Tabs */}
+        <div className="w-full">
+          <div className="grid grid-cols-3 sm:grid-cols-6 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("plan")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "plan" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Plan
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("invest")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "invest" ? "bg-white text-emerald-700 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Invest
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("spend")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "spend" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Spend
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("runway")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "runway" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Runway
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("emis")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "emis" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              EMIs
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("cards")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "cards" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Cards
+            </button>
+          </div>
 
           {/* TAB 1: MONTH PLAN & CASHFLOW */}
-          <TabsContent value="plan" className="mt-4 space-y-4">
-            {/* Live Bank Liquidity Manager */}
-            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <Landmark className="size-4 text-slate-700" />
-                    <p className="text-sm font-bold text-slate-900">
-                      Live Bank Balance & Liquidity Manager ({formatMonthLabel(selectedMonth)})
+          {activeTab === "plan" && (
+            <div className="mt-4 space-y-4">
+              {/* Live Bank Liquidity Manager */}
+              <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <Landmark className="size-4 text-slate-700" />
+                      <p className="text-sm font-bold text-slate-900">
+                        Live Bank Balance & Liquidity Manager ({formatMonthLabel(selectedMonth)})
+                      </p>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                      Automatically subtracts debts, EMIs, card bills, and living spends as paid.
                     </p>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                    Automatically subtracts debts, EMIs, card bills, and living spends as paid.
-                  </p>
+                  <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200">
+                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Required Bank Reserve</p>
+                    <p className="font-mono text-xl font-extrabold text-slate-900">{formatInr(liveCashNeededInBank)}</p>
+                    <p className="text-[11px] font-medium text-slate-600">
+                      {totalRemainingPendingOutflows > 0
+                        ? `${formatInr(totalRemainingPendingOutflows)} pending + ₹5k buffer`
+                        : "All outflows cleared! ₹5k buffer intact"}
+                    </p>
+                  </div>
                 </div>
-                <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200">
-                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Required Bank Reserve</p>
-                  <p className="font-mono text-xl font-extrabold text-slate-900">{formatInr(liveCashNeededInBank)}</p>
-                  <p className="text-[11px] font-medium text-slate-600">
-                    {totalRemainingPendingOutflows > 0
-                      ? `${formatInr(totalRemainingPendingOutflows)} pending + ₹5k buffer`
-                      : "All outflows cleared! ₹5k buffer intact"}
-                  </p>
+
+                {/* Progress */}
+                <div className="space-y-1.5 rounded-lg bg-slate-50 p-3 border border-slate-200">
+                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                    <span>Outflows Settled</span>
+                    <span className="font-mono">
+                      {formatInr(totalDebtsPaidSoFar)} / {formatInr(totalDebtsOriginalTotal)}
+                    </span>
+                  </div>
+                  <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2" />
                 </div>
               </div>
 
-              {/* Progress */}
-              <div className="space-y-1.5 rounded-lg bg-slate-50 p-3 border border-slate-200">
-                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                  <span>Outflows Settled</span>
-                  <span className="font-mono">
-                    {formatInr(totalDebtsPaidSoFar)} / {formatInr(totalDebtsOriginalTotal)}
-                  </span>
-                </div>
-                <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2 bg-slate-200" />
-              </div>
-            </div>
-
-            {/* Income Streams */}
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
+              {/* Income Streams */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base font-bold text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</CardTitle>
-                    <CardDescription className="text-xs text-slate-500">Toggle switch when salary/freelance money is received.</CardDescription>
+                    <h3 className="text-base font-bold text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</h3>
+                    <p className="text-xs text-slate-500">Toggle switch when salary/freelance money is received.</p>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
-                    onClick={() => setShowAddIncome(!showAddIncome)}
+                    onPress={() => setShowAddIncome(!showAddIncome)}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Income
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+
                 {showAddIncome && (
                   <form onSubmit={handleAddIncome} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
                     <p className="text-xs font-bold text-slate-900">Add Income Stream</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <Input
+                      <input
                         placeholder="Source (e.g. Freelance)"
                         value={newIncomeName}
                         onChange={(e) => setNewIncomeName(e.target.value)}
-                        className="bg-white border-slate-200 text-xs h-9"
+                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
                       />
-                      <Input
+                      <input
                         placeholder="Amount (₹)"
                         type="number"
                         value={newIncomeAmount}
                         onChange={(e) => setNewIncomeAmount(e.target.value)}
-                        className="bg-white border-slate-200 text-xs h-9"
+                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
                       />
-                      <Input
+                      <input
                         placeholder="Expected date (e.g. Mid Sep)"
                         value={newIncomeDate}
                         onChange={(e) => setNewIncomeDate(e.target.value)}
-                        className="bg-white border-slate-200 text-xs h-9"
+                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white">Save</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddIncome(false)}>Cancel</Button>
+                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 text-white">Save</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onPress={() => setShowAddIncome(false)}>Cancel</Button>
                     </div>
                   </form>
                 )}
@@ -929,20 +971,20 @@ export function SafeSpendApp() {
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
                           <p className="truncate text-sm font-semibold text-slate-900">{source.name}</p>
-                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-md border", source.status === "received" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600")}>
+                          <Chip color={source.status === "received" ? "success" : "default"} size="sm" variant="soft">
                             {source.status === "received" ? "Received" : `Pending (${source.expectedDate})`}
-                          </span>
+                          </Chip>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
                         <p className="font-mono text-sm font-bold text-slate-900">{formatInr(source.amount)}</p>
                         <Switch
-                          checked={source.status === "received"}
-                          onCheckedChange={() => toggleIncomeStatus(source.id)}
+                          isSelected={source.status === "received"}
+                          onChange={() => toggleIncomeStatus(source.id)}
                           aria-label={`Toggle status for ${source.name}`}
                         />
                         {monthlyIncomes[selectedMonth] && (
-                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteIncome(source.id)}>
+                          <Button size="sm" variant="ghost" className="size-7 p-0 text-slate-400 hover:text-red-600 min-w-0" onPress={() => deleteIncome(source.id)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         )}
@@ -950,39 +992,36 @@ export function SafeSpendApp() {
                     </div>
                   ))}
                 </div>
-              </CardContent>
-            </Card>
+              </Card>
 
-            {/* Custom Debts */}
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
+              {/* Custom Debts */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-base font-bold text-slate-900">Custom Debts ({formatMonthLabel(selectedMonth)})</CardTitle>
-                    <CardDescription className="text-xs text-slate-500">Track loans from friends or lenders.</CardDescription>
+                    <h3 className="text-base font-bold text-slate-900">Custom Debts ({formatMonthLabel(selectedMonth)})</h3>
+                    <p className="text-xs text-slate-500">Track loans from friends or lenders.</p>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
                     className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
-                    onClick={() => setShowAddDebt(!showAddDebt)}
+                    onPress={() => setShowAddDebt(!showAddDebt)}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Debt
                   </Button>
                 </div>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+
                 {showAddDebt && (
                   <form onSubmit={handleAddDebt} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
                     <p className="text-xs font-bold text-slate-900">Add Custom Debt</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <Input placeholder="Debt name" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
-                      <Input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
-                      <Input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
+                      <input placeholder="Debt name" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
+                      <input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
+                      <input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white">Save</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddDebt(false)}>Cancel</Button>
+                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 text-white">Save</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onPress={() => setShowAddDebt(false)}>Cancel</Button>
                     </div>
                   </form>
                 )}
@@ -999,7 +1038,7 @@ export function SafeSpendApp() {
                         </div>
                         <div className="flex items-center gap-3">
                           <p className="font-mono text-sm font-bold text-slate-900">{formatInr(d.totalAmount)}</p>
-                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteDebt(d.id)}>
+                          <Button size="sm" variant="ghost" className="size-7 p-0 text-slate-400 hover:text-red-600 min-w-0" onPress={() => deleteDebt(d.id)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         </div>
@@ -1007,85 +1046,88 @@ export function SafeSpendApp() {
                     ))}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </Card>
+            </div>
+          )}
 
           {/* TAB 2: WEALTH INVESTMENT ENGINE */}
-          <TabsContent value="invest" className="mt-4 space-y-4">
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden">
-              <div className="bg-slate-900 p-4 sm:p-5 text-white">
-                <div className="flex items-center gap-2">
-                  <Sparkles className="size-4 text-emerald-400" />
-                  <h2 className="text-base font-bold">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
+          {activeTab === "invest" && (
+            <div className="mt-4 space-y-4">
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden p-0">
+                <div className="bg-slate-900 p-4 sm:p-5 text-white">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="size-4 text-emerald-400" />
+                    <h2 className="text-base font-bold">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
+                  </div>
+                  <p className="text-xs text-slate-300 mt-1 font-normal">{investmentPlan.strategyGuidance}</p>
                 </div>
-                <p className="text-xs text-slate-300 mt-1 font-normal">{investmentPlan.strategyGuidance}</p>
-              </div>
-              <CardContent className="p-4 sm:p-5 space-y-4">
-                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Monthly Surplus Invested</span>
-                    <span className="font-mono text-2xl font-extrabold text-emerald-700">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
+                <div className="p-4 sm:p-5 space-y-4">
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-1">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Monthly Surplus Invested</span>
+                      <span className="font-mono text-2xl font-extrabold text-emerald-700">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Fund Allocation Breakdown:</p>
+
+                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                      <div className="flex justify-between text-sm font-bold text-slate-900">
+                        <span>{investmentPlan.liquidFundName}</span>
+                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.liquidFundAmount)}</span>
+                      </div>
+                      <p className="text-xs text-slate-500">{investmentPlan.liquidFundNote}</p>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                      <div className="flex justify-between text-sm font-bold text-slate-900">
+                        <span>{investmentPlan.niftyIndexFundName}</span>
+                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.niftyIndexFundAmount)}</span>
+                      </div>
+                      <p className="text-xs text-slate-500">{investmentPlan.niftyIndexFundNote}</p>
+                    </div>
+
+                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                      <div className="flex justify-between text-sm font-bold text-slate-900">
+                        <span>{investmentPlan.flexiCapFundName}</span>
+                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.flexiCapFundAmount)}</span>
+                      </div>
+                      <p className="text-xs text-slate-500">{investmentPlan.flexiCapFundNote}</p>
+                    </div>
                   </div>
                 </div>
-
-                <div className="space-y-3">
-                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Fund Allocation Breakdown:</p>
-
-                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                    <div className="flex justify-between text-sm font-bold text-slate-900">
-                      <span>{investmentPlan.liquidFundName}</span>
-                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.liquidFundAmount)}</span>
-                    </div>
-                    <p className="text-xs text-slate-500">{investmentPlan.liquidFundNote}</p>
-                  </div>
-
-                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                    <div className="flex justify-between text-sm font-bold text-slate-900">
-                      <span>{investmentPlan.niftyIndexFundName}</span>
-                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.niftyIndexFundAmount)}</span>
-                    </div>
-                    <p className="text-xs text-slate-500">{investmentPlan.niftyIndexFundNote}</p>
-                  </div>
-
-                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                    <div className="flex justify-between text-sm font-bold text-slate-900">
-                      <span>{investmentPlan.flexiCapFundName}</span>
-                      <span className="font-mono text-emerald-700">{formatInr(investmentPlan.flexiCapFundAmount)}</span>
-                    </div>
-                    <p className="text-xs text-slate-500">{investmentPlan.flexiCapFundNote}</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </Card>
+            </div>
+          )}
 
           {/* TAB 3: SPEND TRACKER & PARTIAL PAYMENT ENGINE */}
-          <TabsContent value="spend" className="mt-4 space-y-4">
-            {/* Form Card */}
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
-                  {editingEntryId ? (
-                    <>
-                      <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
-                    </>
-                  )}
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500">
-                  {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-5 pt-2">
+          {activeTab === "spend" && (
+            <div className="mt-4 space-y-4">
+              {/* Form Card */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
+                <div>
+                  <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
+                    {editingEntryId ? (
+                      <>
+                        <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
+                      </>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs."}
+                  </p>
+                </div>
+
                 <form className="space-y-4" onSubmit={addSpend}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label htmlFor="spendDate" className="text-xs font-semibold text-slate-700">Date</Label>
-                      <Input
+                      <label htmlFor="spendDate" className="text-xs font-semibold text-slate-700 block">Date</label>
+                      <input
                         id="spendDate"
                         type="date"
                         max={getLocalDateString()}
@@ -1095,14 +1137,14 @@ export function SafeSpendApp() {
                           const today = getLocalDateString();
                           setSpendDate(val > today ? today : val);
                         }}
-                        className="bg-white border-slate-200 text-sm h-10 rounded-lg"
+                        className="w-full bg-white border border-slate-200 text-sm h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="amount" className="text-xs font-semibold text-slate-700">Amount (₹)</Label>
+                      <label htmlFor="amount" className="text-xs font-semibold text-slate-700 block">Amount (₹)</label>
                       <div className="relative">
                         <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400 font-mono">₹</span>
-                        <Input
+                        <input
                           id="amount"
                           inputMode="numeric"
                           min="1"
@@ -1110,7 +1152,7 @@ export function SafeSpendApp() {
                           type="number"
                           value={amount}
                           onChange={(event) => setAmount(event.target.value)}
-                          className="bg-white border-slate-200 text-sm h-10 pl-7 font-mono font-bold text-slate-900 rounded-lg"
+                          className="w-full bg-white border border-slate-200 text-sm h-10 pl-7 px-3 font-mono font-bold text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                         />
                       </div>
                     </div>
@@ -1118,7 +1160,7 @@ export function SafeSpendApp() {
 
                   {/* Clean Category Select */}
                   <div className="space-y-1.5">
-                    <Label htmlFor="categorySelect" className="text-xs font-semibold text-slate-700">Expense Category</Label>
+                    <label htmlFor="categorySelect" className="text-xs font-semibold text-slate-700 block">Expense Category</label>
                     <select
                       id="categorySelect"
                       value={categoryId}
@@ -1146,7 +1188,7 @@ export function SafeSpendApp() {
 
                   {/* Payment Method Selector */}
                   <div className="space-y-1.5">
-                    <Label className="text-xs font-semibold text-slate-700">Payment Method</Label>
+                    <label className="text-xs font-semibold text-slate-700 block">Payment Method</label>
                     <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                       {paymentMethods.map((method) => {
                         const isSelected = paidBy === method.id;
@@ -1170,28 +1212,30 @@ export function SafeSpendApp() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="note" className="text-xs font-semibold text-slate-700">Note / Remarks (Optional)</Label>
-                    <Input
+                    <label htmlFor="note" className="text-xs font-semibold text-slate-700 block">Note / Remarks (Optional)</label>
+                    <input
                       id="note"
                       placeholder="e.g. Grocery store purchase..."
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
-                      className="bg-white border-slate-200 text-xs h-10 rounded-lg"
+                      className="w-full bg-white border border-slate-200 text-xs h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
                     />
                   </div>
 
                   {paidBy !== "upi" && paidBy !== "cash" && (
-                    <Alert className="border-amber-200 bg-amber-50 rounded-lg">
-                      <AlertCircle className="size-4 text-amber-800" />
-                      <AlertTitle className="text-xs font-bold text-amber-900">Card Warning</AlertTitle>
-                      <AlertDescription className="text-xs text-amber-800 font-medium">
+                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="size-4 text-amber-800" />
+                        <p className="text-xs font-bold text-amber-900">Card Warning</p>
+                      </div>
+                      <p className="text-xs text-amber-800 font-medium">
                         Card usage should remain ₹0 until utilization drops below 30%.
-                      </AlertDescription>
-                    </Alert>
+                      </p>
+                    </div>
                   )}
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs" type="submit">
+                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 text-white rounded-lg shadow-xs" type="submit">
                       {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
                     </Button>
                     {editingEntryId && (
@@ -1199,64 +1243,63 @@ export function SafeSpendApp() {
                         type="button"
                         variant="outline"
                         className="h-10 border-slate-200 text-slate-700 rounded-lg"
-                        onClick={cancelEditingEntry}
+                        onPress={cancelEditingEntry}
                       >
                         Cancel
                       </Button>
                     )}
                   </div>
                 </form>
-              </CardContent>
-            </Card>
+              </Card>
 
-            {/* Budget Pace Meter */}
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-bold text-slate-900">Budget Pace</CardTitle>
-                  <StatusBadge status={pace.status} />
-                </div>
-                <CardDescription className="text-xs text-slate-500 font-medium">{pace.message}</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4 p-4 sm:p-5 pt-2">
+              {/* Budget Pace Meter */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
-                    <span>Monthly Variable Spend</span>
-                    <span className="font-mono">
-                      {formatInr(variableSpent)} / {formatInr(variableBudget)}
-                    </span>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900">Budget Pace</h3>
+                    <StatusBadge status={pace.status} />
                   </div>
-                  <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2 bg-slate-100" />
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">{pace.message}</p>
                 </div>
 
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                    <p className="text-slate-500 font-medium">Day</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
+                      <span>Monthly Variable Spend</span>
+                      <span className="font-mono">
+                        {formatInr(variableSpent)} / {formatInr(variableBudget)}
+                      </span>
+                    </div>
+                    <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
                   </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                    <p className="text-slate-500 font-medium">Allowed Today</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                    <p className="text-slate-500 font-medium">Projected End</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Day</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Allowed Today</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Projected End</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                    </div>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </Card>
 
-            {/* Spend History */}
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
+              {/* Spend History */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <CardTitle className="text-base font-bold text-slate-900">Spend History</CardTitle>
-                    <CardDescription className="text-xs text-slate-500 font-medium">
+                    <h3 className="text-base font-bold text-slate-900">Spend History</h3>
+                    <p className="text-xs text-slate-500 font-medium">
                       {filteredEntries.length
                         ? `Showing ${filteredEntries.length} of ${entries.length} entries`
                         : "No spends logged."}
-                    </CardDescription>
+                    </p>
                   </div>
 
                   {/* Date Filter Buttons */}
@@ -1264,36 +1307,36 @@ export function SafeSpendApp() {
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "all" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
-                      onClick={() => setSpendListFilter("all")}
+                      variant={spendListFilter === "all" ? "solid" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("all")}
                     >
                       All
                     </Button>
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "today" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
-                      onClick={() => setSpendListFilter("today")}
+                      variant={spendListFilter === "today" ? "solid" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("today")}
                     >
                       Today
                     </Button>
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "yesterday" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
-                      onClick={() => setSpendListFilter("yesterday")}
+                      variant={spendListFilter === "yesterday" ? "solid" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("yesterday")}
                     >
                       Yesterday
                     </Button>
                     <Button
                       type="button"
                       size="sm"
-                      variant={spendListFilter === "custom" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
-                      onClick={() => {
+                      variant={spendListFilter === "custom" ? "solid" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => {
                         setSpendListFilter("custom");
                         if (!spendListCustomDate) setSpendListCustomDate(getLocalDateString());
                       }}
@@ -1305,7 +1348,7 @@ export function SafeSpendApp() {
 
                 {spendListFilter === "custom" && (
                   <div className="pt-2">
-                    <Input
+                    <input
                       type="date"
                       max={getLocalDateString()}
                       value={spendListCustomDate}
@@ -1314,12 +1357,11 @@ export function SafeSpendApp() {
                         const today = getLocalDateString();
                         setSpendListCustomDate(val > today ? today : val);
                       }}
-                      className="h-8 text-xs bg-white max-w-[180px] rounded-md"
+                      className="h-8 text-xs bg-white border border-slate-200 max-w-[180px] rounded-md px-2"
                     />
                   </div>
                 )}
-              </CardHeader>
-              <CardContent className="p-4 sm:p-5 pt-2">
+
                 {filteredEntries.length === 0 ? (
                   <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
                     No spend entries found for the selected filter.
@@ -1352,21 +1394,19 @@ export function SafeSpendApp() {
                             <p className="font-mono text-sm font-bold text-slate-900 mr-1">{formatInr(entry.amount)}</p>
                             <Button
                               aria-label="Edit spend entry"
-                              size="icon"
-                              type="button"
+                              size="sm"
                               variant="ghost"
-                              className="size-7 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md"
-                              onClick={() => startEditingEntry(entry)}
+                              className="size-7 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md min-w-0"
+                              onPress={() => startEditingEntry(entry)}
                             >
                               <Pencil className="size-3.5" />
                             </Button>
                             <Button
                               aria-label="Delete spend entry"
-                              size="icon"
-                              type="button"
+                              size="sm"
                               variant="ghost"
-                              className="size-7 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md"
-                              onClick={() => {
+                              className="size-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md min-w-0"
+                              onPress={() => {
                                 if (editingEntryId === entry.id) cancelEditingEntry();
                                 setEntries((current) => current.filter((item) => item.id !== entry.id));
                               }}
@@ -1379,18 +1419,18 @@ export function SafeSpendApp() {
                     })}
                   </div>
                 )}
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </Card>
+            </div>
+          )}
 
           {/* TAB 4: RUNWAY & TIMELINE */}
-          <TabsContent value="runway" className="mt-4 space-y-4">
-            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-              <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="text-base font-bold text-slate-900">Salary-Only Runway Forecast</CardTitle>
-                <CardDescription className="text-xs text-slate-500 font-medium">Trajectory towards Zero EMI freedom.</CardDescription>
-              </CardHeader>
-              <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
+          {activeTab === "runway" && (
+            <div className="mt-4 space-y-4">
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
+                <div>
+                  <h3 className="text-base font-bold text-slate-900">Salary-Only Runway Forecast</h3>
+                  <p className="text-xs text-slate-500 font-medium">Trajectory towards Zero EMI freedom.</p>
+                </div>
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
                   <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
                     <p className="text-slate-500 font-medium">Living budget</p>
@@ -1405,94 +1445,96 @@ export function SafeSpendApp() {
                     <p className="mt-0.5 font-mono text-sm font-bold text-emerald-700">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} mo</p>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+              </Card>
+            </div>
+          )}
 
           {/* TAB 5: EMIS LEDGER */}
-          <TabsContent value="emis" className="mt-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-bold text-slate-900">Personal EMIs</CardTitle>
-                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthPersonalEmisTotal)}/mo</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  {currentPersonalEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                      <span className="font-semibold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+          {activeTab === "emis" && (
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Personal EMIs</h3>
+                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthPersonalEmisTotal)}/mo</p>
+                  </div>
+                  <div className="space-y-2">
+                    {currentPersonalEmis.map((e) => (
+                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                        <span className="font-semibold text-slate-800">{e.name}</span>
+                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
 
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Payable EMIs</CardTitle>
-                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatPayableTotal)}/mo</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  {currentVenkatPayableEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                      <span className="font-semibold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Venkat Payable EMIs</h3>
+                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatPayableTotal)}/mo</p>
+                  </div>
+                  <div className="space-y-2">
+                    {currentVenkatPayableEmis.map((e) => (
+                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                        <span className="font-semibold text-slate-800">{e.name}</span>
+                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
 
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
-                <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Receivable (On Name)</CardTitle>
-                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</CardDescription>
-                </CardHeader>
-                <CardContent className="p-4 pt-0 space-y-2">
-                  {currentVenkatOnYourNameEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                      <span className="font-semibold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
+                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">Venkat Receivable (On Name)</h3>
+                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</p>
+                  </div>
+                  <div className="space-y-2">
+                    {currentVenkatOnYourNameEmis.map((e) => (
+                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                        <span className="font-semibold text-slate-800">{e.name}</span>
+                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              </div>
             </div>
-          </TabsContent>
+          )}
 
           {/* TAB 6: CARDS DASHBOARD */}
-          <TabsContent value="cards" className="mt-4 space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              {octoberSeedData.cards.map((card) => {
-                const cardStatus = getCardUsageStatus(card);
-                return (
-                  <Card key={card.name} className="border-slate-200 bg-white shadow-2xs rounded-xl">
-                    <CardHeader className="p-4">
+          {activeTab === "cards" && (
+            <div className="mt-4 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {octoberSeedData.cards.map((card) => {
+                  const cardStatus = getCardUsageStatus(card);
+                  return (
+                    <Card key={card.name} className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
                       <div className="flex justify-between items-center">
-                        <CardTitle className="text-base font-bold text-slate-900">{card.name}</CardTitle>
-                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", cardStatus.status === "freeze" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700")}>
+                        <h3 className="text-base font-bold text-slate-900">{card.name}</h3>
+                        <Chip color={cardStatus.status === "freeze" ? "danger" : "success"} size="sm" variant="soft">
                           {cardStatus.status === "freeze" ? "FREEZE" : "SAFE"}
-                        </span>
+                        </Chip>
                       </div>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0 space-y-3">
-                      <div>
-                        <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-                          <span>Limit Utilized</span>
-                          <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                            <span>Limit Utilized</span>
+                            <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
+                          </div>
+                          <Progress value={cardStatus.utilization * 100} className="h-2" />
                         </div>
-                        <Progress value={cardStatus.utilization * 100} className="h-2 bg-slate-100" />
+                        <div className="flex justify-between text-xs font-medium text-slate-500">
+                          <span>Used: {formatInr(cardStatus.used)}</span>
+                          <span>Available: {formatInr(card.available)}</span>
+                        </div>
                       </div>
-                      <div className="flex justify-between text-xs font-medium text-slate-500">
-                        <span>Used: {formatInr(cardStatus.used)}</span>
-                        <span>Available: {formatInr(card.available)}</span>
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
+                    </Card>
+                  );
+                })}
+              </div>
             </div>
-          </TabsContent>
-        </Tabs>
+          )}
+        </div>
       </section>
     </main>
   );
