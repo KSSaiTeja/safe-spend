@@ -193,7 +193,7 @@ export const octoberSeedData: MonthlyBudgetData = {
     { id: "ac-pay-to-venkat", name: "AC EMI", amount: 1400, ends: "Mar 2027", endMonth: "2027-03", direction: "pay-to-venkat" },
     { id: "goa-pay-to-venkat", name: "Goa trip EMI", amount: 1500, ends: "Nov 2026", endMonth: "2026-11", direction: "pay-to-venkat" },
     { id: "sriram-pay-to-venkat", name: "Sriram", amount: 5000, ends: "Mar 2028", endMonth: "2028-03", direction: "pay-to-venkat" },
-    { id: "chitfund-pay-to-venkat", name: "Chit fund", amount: 5000, ends: "Apr 2027", endMonth: "2027-04", direction: "pay-to-venkat" },
+    { id: "chitfund-pay-to-venkat", name: "Chit fund", amount: 5000, ends: "Jul 2027", endMonth: "2027-07", direction: "pay-to-venkat", note: "Ends in 11 months (July 2027)" },
   ],
   venkatReceivableEmis: [
     { id: "kreditbee", name: "KreditBee", amount: 3860, ends: "Jan 2027", endMonth: "2027-01", direction: "collect-from-venkat" },
