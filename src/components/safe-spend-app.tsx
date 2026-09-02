@@ -1379,7 +1379,7 @@ export function SafeSpendApp() {
                     })}
                   </div>
                 )}
-              CardContent>
+              </CardContent>
             </Card>
           </TabsContent>
 
