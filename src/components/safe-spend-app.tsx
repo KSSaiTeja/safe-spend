@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowUpRight,
   Calendar as CalendarIcon,
   Check,
   ChevronDown,
@@ -19,9 +20,12 @@ import {
   PiggyBank,
   Plus,
   RefreshCcw,
+  Search,
   ShoppingBag,
   Sparkles,
   Trash2,
+  TrendingDown,
+  TrendingUp,
   UserCheck,
   Wallet,
   Zap,
@@ -31,7 +35,6 @@ import {
   Button,
   Card,
   Chip,
-  Input,
   ProgressBar,
   Switch,
 } from "@heroui/react";
@@ -70,12 +73,12 @@ const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string }> = [
 ];
 
 const categoryOptions = [
-  { id: "groceries", label: "Groceries & Daily Needs", icon: ShoppingBag, budget: "₹3,000/mo", color: "text-amber-600 bg-amber-50 border-amber-200" },
-  { id: "bike", label: "Bike Fuel & Maintenance", icon: Fuel, budget: "₹3,000/mo", color: "text-sky-600 bg-sky-50 border-sky-200" },
-  { id: "gym", label: "Gym & Fitness", icon: Dumbbell, budget: "₹2,500/mo", color: "text-purple-600 bg-purple-50 border-purple-200" },
-  { id: "rent", label: "Room Rent", icon: Home, budget: "₹6,000/mo", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
-  { id: "electricity", label: "Electricity", icon: Zap, budget: "₹500/mo", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
-  { id: "misc", label: "Miscellaneous Living", icon: Coffee, budget: "₹3,000/mo", color: "text-slate-600 bg-slate-100 border-slate-200" },
+  { id: "groceries", label: "Groceries & Daily Needs", icon: ShoppingBag, budget: "₹3,000/mo", color: "text-amber-600 bg-amber-50" },
+  { id: "bike", label: "Bike Fuel & Maintenance", icon: Fuel, budget: "₹3,000/mo", color: "text-sky-600 bg-sky-50" },
+  { id: "gym", label: "Gym & Fitness", icon: Dumbbell, budget: "₹2,500/mo", color: "text-purple-600 bg-purple-50" },
+  { id: "rent", label: "Room Rent", icon: Home, budget: "₹6,000/mo", color: "text-emerald-600 bg-emerald-50" },
+  { id: "electricity", label: "Electricity", icon: Zap, budget: "₹500/mo", color: "text-yellow-600 bg-yellow-50" },
+  { id: "misc", label: "Miscellaneous Living", icon: Coffee, budget: "₹3,000/mo", color: "text-slate-600 bg-slate-100" },
 ];
 
 function loadSpendEntries(): SpendEntry[] {
@@ -149,8 +152,8 @@ function formatDateFormatted(dateStr: string) {
   const todayStr = getLocalDateString();
   const yesterdayStr = getYesterdayDateString();
 
-  if (dateStr === todayStr) return `Today (${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
-  if (dateStr === yesterdayStr) return `Yesterday (${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+  if (dateStr === todayStr) return `Today, ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
+  if (dateStr === yesterdayStr) return `Yesterday, ${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })}`;
 
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
@@ -161,86 +164,6 @@ function getSeptemberDay() {
     return Math.min(Math.max(now.getDate(), 1), 30);
   }
   return 1;
-}
-
-function StatusBadge({ status }: { status: "green" | "yellow" | "red" }) {
-  const copy = {
-    green: "Safe Pace",
-    yellow: "Careful",
-    red: "Over Pace",
-  }[status];
-
-  const colorMap = {
-    green: "success" as const,
-    yellow: "warning" as const,
-    red: "danger" as const,
-  };
-
-  return (
-    <Chip color={colorMap[status]} size="sm" variant="soft">
-      {copy}
-    </Chip>
-  );
-}
-
-function ForecastBadge({ status }: { status: "tight" | "stable" | "free" | "emi-zero" }) {
-  const copy = {
-    tight: "Tight Budget",
-    stable: "Stable",
-    free: "Freeing Up",
-    "emi-zero": "Zero EMI",
-  }[status];
-
-  const colorMap = {
-    tight: "warning" as const,
-    stable: "default" as const,
-    free: "success" as const,
-    "emi-zero": "accent" as const,
-  };
-
-  return (
-    <Chip color={colorMap[status]} size="sm" variant={status === "emi-zero" ? "primary" : "soft"}>
-      {copy}
-    </Chip>
-  );
-}
-
-function MetricCard({
-  title,
-  value,
-  detail,
-  icon: Icon,
-  tone = "default",
-}: {
-  title: string;
-  value: string;
-  detail: string;
-  icon: typeof IndianRupee;
-  tone?: "default" | "safe" | "warn" | "danger" | "info";
-}) {
-  return (
-    <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
-          <p className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono">{value}</p>
-          <p className="mt-1 text-xs text-slate-600 font-medium">{detail}</p>
-        </div>
-        <div
-          className={cn(
-            "rounded-lg border p-2.5 shrink-0",
-            tone === "default" && "border-slate-200 bg-slate-50 text-slate-700",
-            tone === "safe" && "border-emerald-200 bg-emerald-50 text-emerald-700",
-            tone === "warn" && "border-amber-200 bg-amber-50 text-amber-800",
-            tone === "danger" && "border-red-200 bg-red-50 text-red-700",
-            tone === "info" && "border-slate-200 bg-slate-100 text-slate-700",
-          )}
-        >
-          <Icon className="size-5" />
-        </div>
-      </div>
-    </Card>
-  );
 }
 
 export function SafeSpendApp() {
@@ -266,8 +189,8 @@ export function SafeSpendApp() {
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
 
   // Spend list filter states
-  const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday" | "custom">("all");
-  const [spendListCustomDate, setSpendListCustomDate] = useState<string>("");
+  const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday">("all");
+  const [searchQuery, setSearchQuery] = useState("");
 
   // Income entry form states for selected month
   const [newIncomeName, setNewIncomeName] = useState("");
@@ -554,35 +477,39 @@ export function SafeSpendApp() {
     daysInMonth: 30,
   });
 
-  // Date-oriented filtered entries
+  // Date-oriented filtered entries with search query
   const filteredEntries = useMemo(() => {
     const todayStr = getLocalDateString();
     const yesterdayStr = getYesterdayDateString();
 
+    let list = entries;
     if (spendListFilter === "today") {
-      return entries.filter((e) => e.date === todayStr);
+      list = entries.filter((e) => e.date === todayStr);
+    } else if (spendListFilter === "yesterday") {
+      list = entries.filter((e) => e.date === yesterdayStr);
     }
-    if (spendListFilter === "yesterday") {
-      return entries.filter((e) => e.date === yesterdayStr);
-    }
-    if (spendListFilter === "custom" && spendListCustomDate) {
-      return entries.filter((e) => e.date === spendListCustomDate);
-    }
-    return entries;
-  }, [entries, spendListFilter, spendListCustomDate]);
 
-  // Month navigation helpers
-  const currentMonthIndex = allForecastMonths.findIndex((m) => m.value === selectedMonth);
-  const prevMonth = currentMonthIndex > 0 ? allForecastMonths[currentMonthIndex - 1].value : null;
-  const nextMonth = currentMonthIndex < allForecastMonths.length - 1 ? allForecastMonths[currentMonthIndex + 1].value : null;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      list = list.filter(
+        (e) =>
+          e.note?.toLowerCase().includes(q) ||
+          e.amount.toString().includes(q) ||
+          e.date.includes(q) ||
+          e.paidBy.toLowerCase().includes(q),
+      );
+    }
+
+    return list;
+  }, [entries, spendListFilter, searchQuery]);
 
   // Currently selected category object
   const selectedCategoryObj = useMemo(() => {
     const livingCat = categoryOptions.find((c) => c.id === categoryId);
     if (livingCat) return { label: livingCat.label, Icon: livingCat.icon, sub: livingCat.budget, color: livingCat.color };
     const debtCat = debtPaymentStats.find((d) => d.id === categoryId);
-    if (debtCat) return { label: debtCat.name, Icon: debtCat.priority === "high" ? AlertCircle : UserCheck, sub: debtCat.isCleared ? "Cleared" : formatInr(debtCat.remainingBalance), color: "text-amber-600 bg-amber-50 border-amber-200" };
-    return { label: "Select Category", Icon: Wallet, sub: "", color: "text-slate-700 bg-slate-50 border-slate-200" };
+    if (debtCat) return { label: debtCat.name, Icon: debtCat.priority === "high" ? AlertCircle : UserCheck, sub: debtCat.isCleared ? "Cleared" : formatInr(debtCat.remainingBalance), color: "text-amber-600 bg-amber-50" };
+    return { label: "Select Category", Icon: Wallet, sub: "", color: "text-slate-700 bg-slate-50" };
   }, [categoryId, debtPaymentStats]);
 
   function handleAddIncome(e: FormEvent) {
@@ -755,54 +682,102 @@ export function SafeSpendApp() {
   }, [spendDate]);
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl bg-slate-50 text-slate-900 pb-16 font-sans">
-      {/* Clean Primary Header & Prominent Date Selector */}
-      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-6">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-lg bg-slate-900 p-2 text-white shadow-xs">
-              <Landmark className="size-4" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">SafeSpend</span>
-                <Chip color="success" size="sm" variant="soft">
-                  Live Engine
-                </Chip>
+    <main className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans pb-20">
+      {/* Top Finexy Navigation Bar */}
+      <header className="sticky top-0 z-30 bg-white/90 border-b border-slate-200/70 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-8">
+        <div className="mx-auto max-w-6xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          {/* Logo & Navigation Pills */}
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2.5">
+              <div className="flex size-9 items-center justify-center rounded-2xl bg-[#ff5c38] text-white shadow-sm shadow-[#ff5c38]/30">
+                <Landmark className="size-4" />
               </div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Financial Command</h1>
+              <span className="text-lg font-black tracking-tight text-slate-900">Finexy<span className="text-[#ff5c38]">.</span></span>
             </div>
+
+            {/* Header Navigation Pills (Finexy style) */}
+            <nav className="hidden md:flex items-center gap-1 rounded-full bg-slate-100/90 p-1 border border-slate-200/60">
+              <button
+                type="button"
+                onClick={() => setActiveTab("spend")}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
+                  activeTab === "spend" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                Spend Tracker
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("plan")}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
+                  activeTab === "plan" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                Overview & Plan
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("invest")}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
+                  activeTab === "invest" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                Invest
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("emis")}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
+                  activeTab === "emis" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                EMIs
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab("cards")}
+                className={cn(
+                  "px-4 py-1.5 rounded-full text-xs font-extrabold transition-all",
+                  activeTab === "cards" ? "bg-slate-900 text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
+                )}
+              >
+                Cards
+              </button>
+            </nav>
           </div>
 
-          {/* Primary Date Picker Control & Month Selector Bar */}
-          <div className="flex items-center gap-2 flex-wrap">
-            {/* Custom Interactive Calendar Picker Button */}
+          {/* Right Header Action Cluster */}
+          <div className="flex items-center gap-2">
+            {/* Primary Date Picker Pill */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowCalendarPopover(!showCalendarPopover)}
-                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer"
               >
-                <CalendarIcon className="size-4 text-indigo-600" />
+                <CalendarIcon className="size-3.5 text-[#ff5c38]" />
                 <span>{formatDateFormatted(spendDate)}</span>
-                <ChevronDown className="size-3.5 text-slate-500" />
+                <ChevronDown className="size-3 text-slate-400" />
               </button>
 
-              {/* Custom Popover Calendar Picker Component (NO HTML PREVIEW) */}
+              {/* Custom Popover Calendar */}
               {showCalendarPopover && (
-                <div className="absolute right-0 sm:left-0 top-10 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl space-y-3">
+                <div className="absolute right-0 top-10 z-50 w-72 rounded-3xl border border-slate-200 bg-white p-4 shadow-xl space-y-3">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-                    <span className="text-xs font-extrabold text-slate-900">Select Date for Spends</span>
+                    <span className="text-xs font-extrabold text-slate-900">Select Spend Date</span>
                     <button
                       type="button"
-                      className="text-xs text-slate-400 hover:text-slate-700"
+                      className="text-xs text-slate-400 hover:text-slate-700 font-bold"
                       onClick={() => setShowCalendarPopover(false)}
                     >
-                      Close
+                      Done
                     </button>
                   </div>
 
-                  {/* Quick Preset Buttons */}
                   <div className="flex gap-1.5">
                     <button
                       type="button"
@@ -810,7 +785,7 @@ export function SafeSpendApp() {
                         setSpendDate(getLocalDateString());
                         setShowCalendarPopover(false);
                       }}
-                      className="flex-1 py-1 px-2 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
+                      className="flex-1 py-1 px-2 rounded-lg text-[11px] font-extrabold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
                     >
                       Today
                     </button>
@@ -820,15 +795,14 @@ export function SafeSpendApp() {
                         setSpendDate(getYesterdayDateString());
                         setShowCalendarPopover(false);
                       }}
-                      className="flex-1 py-1 px-2 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
+                      className="flex-1 py-1 px-2 rounded-lg text-[11px] font-extrabold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
                     >
                       Yesterday
                     </button>
                   </div>
 
-                  {/* Custom Calendar Grid */}
                   <div className="space-y-1">
-                    <div className="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 pb-1">
+                    <div className="grid grid-cols-7 text-center text-[10px] font-extrabold text-slate-400 pb-1">
                       <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
                     </div>
                     <div className="grid grid-cols-7 gap-1 text-center text-xs">
@@ -845,9 +819,9 @@ export function SafeSpendApp() {
                             setShowCalendarPopover(false);
                           }}
                           className={cn(
-                            "size-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors",
-                            item.isSelected && "bg-slate-900 text-white font-extrabold shadow-2xs",
-                            !item.isSelected && item.isToday && "border border-indigo-500 text-indigo-700 font-bold bg-indigo-50",
+                            "size-7 rounded-lg text-xs font-bold flex items-center justify-center transition-all",
+                            item.isSelected && "bg-[#ff5c38] text-white shadow-xs",
+                            !item.isSelected && item.isToday && "border border-[#ff5c38] text-[#ff5c38] bg-orange-50 font-bold",
                             !item.isSelected && !item.isToday && !item.isDisabled && "text-slate-800 hover:bg-slate-100",
                             item.isDisabled && "text-slate-300 opacity-40 cursor-not-allowed",
                           )}
@@ -861,19 +835,19 @@ export function SafeSpendApp() {
               )}
             </div>
 
-            {/* Custom Month Selector Dropdown */}
+            {/* Custom Month Dropdown Pill */}
             <div className="relative">
               <button
                 type="button"
                 onClick={() => setShowMonthDropdown(!showMonthDropdown)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-900 hover:bg-slate-200 cursor-pointer"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-xs font-extrabold text-slate-900 hover:bg-slate-200 cursor-pointer"
               >
                 <span>{formatMonthLabel(selectedMonth)}</span>
-                <ChevronDown className="size-3.5 text-slate-500" />
+                <ChevronDown className="size-3 text-slate-500" />
               </button>
 
               {showMonthDropdown && (
-                <div className="absolute right-0 top-10 z-50 w-52 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl space-y-0.5">
+                <div className="absolute right-0 top-10 z-50 w-52 max-h-60 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-xl space-y-0.5">
                   {allForecastMonths.map((m) => (
                     <button
                       key={m.value}
@@ -883,8 +857,8 @@ export function SafeSpendApp() {
                         setShowMonthDropdown(false);
                       }}
                       className={cn(
-                        "w-full text-left px-3 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors",
-                        selectedMonth === m.value ? "bg-slate-100 font-bold text-slate-900" : "text-slate-700 hover:bg-slate-50",
+                        "w-full text-left px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors",
+                        selectedMonth === m.value ? "bg-slate-900 font-bold text-white" : "text-slate-700 hover:bg-slate-50",
                       )}
                     >
                       <span>{m.label}</span>
@@ -899,822 +873,504 @@ export function SafeSpendApp() {
       </header>
 
       {/* Main Container */}
-      <section className="space-y-4 px-4 py-4 sm:px-6">
-        {/* Month Summary Bar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
-          <div className="space-y-0.5">
-            <div className="flex items-center gap-2">
-              <span className="text-base font-bold text-slate-900">{formatMonthLabel(selectedMonth)}</span>
-              <ForecastBadge
-                status={activeEmiCount === 0 ? "emi-zero" : netMonthSurplus >= 20000 ? "free" : netMonthSurplus >= 8000 ? "stable" : "tight"}
-              />
-            </div>
-            <p className="text-xs text-slate-500 font-medium">
-              {activeEmiCount === 0
-                ? "Zero outgoing EMI obligations."
-                : `${activeEmiCount} active outgoing EMIs (${formatInr(monthOutgoingEmis)}/mo).`}
+      <div className="mx-auto max-w-6xl px-4 py-6 sm:px-8 space-y-6">
+        {/* Welcome & Overview Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
+              Good day, Sai 👋
+            </h2>
+            <p className="text-xs sm:text-sm font-medium text-slate-500 mt-0.5">
+              Stay on top of daily spends, monitor liquid bank buffer, and track zero-EMI path.
             </p>
           </div>
 
-          <Button
-            size="sm"
-            variant="tertiary"
-            className="h-8 text-xs font-medium text-slate-600 hover:text-slate-900"
-            onPress={resetLocalData}
-          >
-            <RefreshCcw className="mr-1.5 size-3.5" /> Reset Data
-          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="tertiary"
+              className="h-9 px-3 text-xs font-bold text-slate-600 hover:text-slate-900 rounded-full bg-white border border-slate-200 shadow-2xs"
+              onPress={resetLocalData}
+            >
+              <RefreshCcw className="mr-1.5 size-3.5 text-slate-400" /> Reset Data
+            </Button>
+          </div>
         </div>
 
-        {/* Top Metric Widgets */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <MetricCard
-            title="Total Income"
-            value={formatInr(monthTotalIncome)}
-            detail={`Received: ${formatInr(monthIncomeReceived)}`}
-            icon={IndianRupee}
-            tone="info"
-          />
-          <MetricCard
-            title="Outgoing EMIs"
-            value={formatInr(monthOutgoingEmis)}
-            detail={`${currentPersonalEmis.length} Personal · ${currentVenkatPayableEmis.length} Venkat`}
-            icon={CreditCardIcon}
-            tone={monthOutgoingEmis > 20000 ? "warn" : "default"}
-          />
-          <MetricCard
-            title="Live Bank Balance"
-            value={formatInr(currentLiveBankBalance)}
-            detail={currentLiveBankBalance >= liveCashNeededInBank ? "Safety buffer intact" : "Needs cash injection"}
-            icon={Landmark}
-            tone={currentLiveBankBalance >= liveCashNeededInBank ? "safe" : "danger"}
-          />
-          <MetricCard
-            title="Must Keep in Bank"
-            value={formatInr(liveCashNeededInBank)}
-            detail={`Pending: ${formatInr(totalRemainingPendingOutflows)} + ₹5k buffer`}
-            icon={PiggyBank}
-            tone="safe"
-          />
-        </div>
-
-        {/* Segmented Navigation Tabs — SPEND IS FIRST & PRIMARY */}
-        <div className="w-full">
-          <div className="grid grid-cols-3 sm:grid-cols-6 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1">
-            <button
-              type="button"
-              onClick={() => setActiveTab("spend")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "spend" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Spend
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("plan")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "plan" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Plan
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("invest")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "invest" ? "bg-white text-emerald-700 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Invest
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("runway")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "runway" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Runway
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("emis")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "emis" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              EMIs
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("cards")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "cards" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Cards
-            </button>
+        {/* 4 Finexy Widget Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {/* Card 1: Featured Coral Orange Card */}
+          <div className="rounded-3xl bg-[#ff5c38] text-white p-5 shadow-sm space-y-3 relative overflow-hidden">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
+              <span className="rounded-full bg-white/20 p-2 text-white">
+                <IndianRupee className="size-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
+              <p className="text-xs font-semibold text-orange-100 mt-1 flex items-center gap-1">
+                <TrendingUp className="size-3.5 text-white" />
+                <span>Received: {formatInr(monthIncomeReceived)}</span>
+              </p>
+            </div>
           </div>
 
-          {/* TAB 1: SPEND TRACKER & QUICK LOG (ACTIVE FIRST) */}
-          {activeTab === "spend" && (
-            <div className="mt-4 space-y-4">
-              {/* Quick Add Spend Form Card */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
+          {/* Card 2: Outgoing EMIs */}
+          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Outgoing EMIs</span>
+              <span className="rounded-full bg-slate-100 p-2 text-slate-700">
+                <CreditCardIcon className="size-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">
+                {currentPersonalEmis.length} Personal · {currentVenkatPayableEmis.length} Venkat
+              </p>
+            </div>
+          </div>
+
+          {/* Card 3: Live Bank Balance */}
+          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Live Bank Balance</span>
+              <span className="rounded-full bg-emerald-50 p-2 text-emerald-600">
+                <Landmark className="size-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(currentLiveBankBalance)}</p>
+              <p className="text-xs font-semibold text-emerald-600 mt-1">
+                {currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety Buffer Intact" : "⚠️ Cash Needed"}
+              </p>
+            </div>
+          </div>
+
+          {/* Card 4: Required Reserve */}
+          <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3">
+            <div className="flex justify-between items-start">
+              <span className="text-xs font-extrabold uppercase tracking-wider text-slate-500">Must Keep in Bank</span>
+              <span className="rounded-full bg-blue-50 p-2 text-blue-600">
+                <PiggyBank className="size-4" />
+              </span>
+            </div>
+            <div>
+              <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(liveCashNeededInBank)}</p>
+              <p className="text-xs font-medium text-slate-500 mt-1">
+                Pending: {formatInr(totalRemainingPendingOutflows)} + ₹5k
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Finexy Layout: 2 Main Columns */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left Column (8 cols): Quick Spend Logger & Activity Table */}
+          <div className="lg:col-span-8 space-y-6">
+            {/* Quick Spend Logger Card */}
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-5">
+              <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
+                  <h3 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
                     {editingEntryId ? (
                       <>
-                        <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
+                        <Pencil className="size-4 text-amber-600" /> Edit Transaction
                       </>
                     ) : (
                       <>
-                        <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
+                        <Plus className="size-4 text-[#ff5c38]" /> Quick Add Spend or Debt Payoff
                       </>
                     )}
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs for selected date."}
+                  <p className="text-xs font-medium text-slate-500 mt-0.5">
+                    Log spends for <span className="font-extrabold text-slate-900">{formatDateFormatted(spendDate)}</span>.
                   </p>
                 </div>
+                <Chip color="success" size="sm" variant="soft">Instant Sync</Chip>
+              </div>
 
-                <form className="space-y-4" onSubmit={addSpend}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    {/* Amount Input */}
-                    <div className="space-y-1.5">
-                      <label htmlFor="amount" className="text-xs font-semibold text-slate-700 block">Amount (₹)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400 font-mono">₹</span>
-                        <input
-                          id="amount"
-                          inputMode="numeric"
-                          min="1"
-                          placeholder="e.g. 3500"
-                          type="number"
-                          value={amount}
-                          onChange={(event) => setAmount(event.target.value)}
-                          className="w-full bg-white border border-slate-200 text-sm h-10 pl-7 px-3 font-mono font-bold text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Date Badge Banner */}
-                    <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-700 block">Selected Date for Entry</label>
-                      <div className="flex items-center justify-between h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800">
-                        <span className="flex items-center gap-1.5">
-                          <CalendarIcon className="size-4 text-indigo-600" />
-                          <span>{formatDateFormatted(spendDate)}</span>
-                        </span>
-                        <button
-                          type="button"
-                          onClick={() => setShowCalendarPopover(true)}
-                          className="text-[11px] font-bold text-indigo-600 hover:underline"
-                        >
-                          Change
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Custom Category Dropdown Component (Using Lucide Icons, NO EMOJIS) */}
-                  <div className="space-y-1.5 relative">
-                    <label className="text-xs font-semibold text-slate-700 block">Expense Category</label>
-                    <button
-                      type="button"
-                      onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                      className="w-full flex items-center justify-between bg-white border border-slate-200 text-sm font-medium text-slate-900 rounded-lg h-11 px-3 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-2xs hover:bg-slate-50/80"
-                    >
-                      <span className="flex items-center gap-2 truncate">
-                        <selectedCategoryObj.Icon className="size-4 shrink-0 text-slate-700" />
-                        <span className="font-semibold">{selectedCategoryObj.label}</span>
-                        {selectedCategoryObj.sub && (
-                          <span className="text-xs text-slate-500 font-normal">({selectedCategoryObj.sub})</span>
-                        )}
-                      </span>
-                      <ChevronDown className="size-4 text-slate-400 shrink-0" />
-                    </button>
-
-                    {/* Custom Popover Dropdown for Categories */}
-                    {showCategoryDropdown && (
-                      <div className="absolute left-0 top-16 z-50 w-full max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl space-y-1">
-                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Living Expenses</p>
-                        {categoryOptions.map((cat) => {
-                          const IconComponent = cat.icon;
-                          const isSel = categoryId === cat.id;
-                          return (
-                            <button
-                              key={cat.id}
-                              type="button"
-                              onClick={() => {
-                                setCategoryId(cat.id);
-                                setShowCategoryDropdown(false);
-                              }}
-                              className={cn(
-                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
-                                isSel ? "bg-slate-900 text-white font-bold" : "text-slate-800 hover:bg-slate-100",
-                              )}
-                            >
-                              <span className="flex items-center gap-2">
-                                <IconComponent className={cn("size-4", isSel ? "text-white" : "text-slate-600")} />
-                                <span>{cat.label}</span>
-                              </span>
-                              <span className={cn("text-[11px]", isSel ? "text-slate-300" : "text-slate-500")}>
-                                {cat.budget}
-                              </span>
-                            </button>
-                          );
-                        })}
-
-                        {debtPaymentStats.length > 0 && (
-                          <>
-                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 pt-2">Debt & Loan Payoffs</p>
-                            {debtPaymentStats.map((debt) => {
-                              const isSel = categoryId === debt.id;
-                              const DebtIcon = debt.priority === "high" ? AlertCircle : UserCheck;
-                              return (
-                                <button
-                                  key={debt.id}
-                                  type="button"
-                                  onClick={() => {
-                                    setCategoryId(debt.id);
-                                    if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
-                                    setShowCategoryDropdown(false);
-                                  }}
-                                  className={cn(
-                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
-                                    isSel ? "bg-amber-600 text-white font-bold" : "text-slate-800 hover:bg-slate-100",
-                                  )}
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <DebtIcon className={cn("size-4", isSel ? "text-white" : "text-amber-600")} />
-                                    <span>{debt.name}</span>
-                                  </span>
-                                  <span className={cn("text-[11px]", isSel ? "text-amber-100" : "text-slate-500")}>
-                                    {debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)}
-                                  </span>
-                                </button>
-                              );
-                            })}
-                          </>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Payment Method Selector */}
+              <form onSubmit={addSpend} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Amount Field */}
                   <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 block">Payment Method</label>
-                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      {paymentMethods.map((method) => {
-                        const isSelected = paidBy === method.id;
+                    <label htmlFor="amount" className="text-xs font-extrabold text-slate-700 block">Amount (₹)</label>
+                    <div className="relative">
+                      <span className="absolute left-3.5 top-2.5 text-sm font-black text-slate-400 font-mono">₹</span>
+                      <input
+                        id="amount"
+                        inputMode="numeric"
+                        min="1"
+                        placeholder="e.g. 3500"
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        className="w-full bg-slate-50/80 border border-slate-200/90 text-sm h-11 pl-8 px-3 font-mono font-black text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Date Banner */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-extrabold text-slate-700 block">Target Date</label>
+                    <div className="flex items-center justify-between h-11 px-3.5 rounded-2xl border border-slate-200 bg-slate-50 text-xs font-extrabold text-slate-900">
+                      <span className="flex items-center gap-2">
+                        <CalendarIcon className="size-4 text-[#ff5c38]" />
+                        <span>{formatDateFormatted(spendDate)}</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowCalendarPopover(true)}
+                        className="text-[11px] font-extrabold text-[#ff5c38] hover:underline"
+                      >
+                        Change
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Custom Category Dropdown Component (Lucide Icons, NO EMOJIS) */}
+                <div className="space-y-1.5 relative">
+                  <label className="text-xs font-extrabold text-slate-700 block">Category</label>
+                  <button
+                    type="button"
+                    onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                    className="w-full flex items-center justify-between bg-slate-50/80 border border-slate-200/90 text-sm font-semibold text-slate-900 rounded-2xl h-11 px-3.5 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer hover:bg-white"
+                  >
+                    <span className="flex items-center gap-2.5 truncate">
+                      <selectedCategoryObj.Icon className="size-4 shrink-0 text-slate-700" />
+                      <span className="font-extrabold text-slate-900">{selectedCategoryObj.label}</span>
+                      {selectedCategoryObj.sub && (
+                        <span className="text-xs text-slate-500 font-normal">({selectedCategoryObj.sub})</span>
+                      )}
+                    </span>
+                    <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                  </button>
+
+                  {/* Dropdown Popover */}
+                  {showCategoryDropdown && (
+                    <div className="absolute left-0 top-16 z-50 w-full max-h-72 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-xl space-y-1">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1">Living Expenses</p>
+                      {categoryOptions.map((cat) => {
+                        const IconComponent = cat.icon;
+                        const isSel = categoryId === cat.id;
                         return (
                           <button
-                            key={method.id}
+                            key={cat.id}
                             type="button"
-                            onClick={() => setPaidBy(method.id)}
+                            onClick={() => {
+                              setCategoryId(cat.id);
+                              setShowCategoryDropdown(false);
+                            }}
                             className={cn(
-                              "flex-1 min-w-[70px] py-1.5 px-3 text-xs font-medium rounded-md transition-colors text-center",
-                              isSelected
-                                ? "bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/80"
-                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50",
+                              "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
+                              isSel ? "bg-slate-900 text-white" : "text-slate-800 hover:bg-slate-100",
                             )}
                           >
-                            {method.label}
+                            <span className="flex items-center gap-2.5">
+                              <IconComponent className={cn("size-4", isSel ? "text-white" : "text-slate-600")} />
+                              <span>{cat.label}</span>
+                            </span>
+                            <span className={cn("text-[11px]", isSel ? "text-slate-300" : "text-slate-500")}>
+                              {cat.budget}
+                            </span>
                           </button>
                         );
                       })}
-                    </div>
-                  </div>
 
-                  <div className="space-y-1.5">
-                    <label htmlFor="note" className="text-xs font-semibold text-slate-700 block">Note / Remarks (Optional)</label>
-                    <input
-                      id="note"
-                      placeholder="e.g. Grocery store purchase..."
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-
-                  {paidBy !== "upi" && paidBy !== "cash" && (
-                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="size-4 text-amber-800" />
-                        <p className="text-xs font-bold text-amber-900">Card Warning</p>
-                      </div>
-                      <p className="text-xs text-amber-800 font-medium">
-                        Card usage should remain ₹0 until utilization drops below 30%.
-                      </p>
+                      {debtPaymentStats.length > 0 && (
+                        <>
+                          <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-2 py-1 pt-2">Debt Payoffs</p>
+                          {debtPaymentStats.map((debt) => {
+                            const isSel = categoryId === debt.id;
+                            const DebtIcon = debt.priority === "high" ? AlertCircle : UserCheck;
+                            return (
+                              <button
+                                key={debt.id}
+                                type="button"
+                                onClick={() => {
+                                  setCategoryId(debt.id);
+                                  if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
+                                  setShowCategoryDropdown(false);
+                                }}
+                                className={cn(
+                                  "w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-extrabold transition-all",
+                                  isSel ? "bg-[#ff5c38] text-white" : "text-slate-800 hover:bg-slate-100",
+                                )}
+                              >
+                                <span className="flex items-center gap-2.5">
+                                  <DebtIcon className={cn("size-4", isSel ? "text-white" : "text-[#ff5c38]")} />
+                                  <span>{debt.name}</span>
+                                </span>
+                                <span className={cn("text-[11px]", isSel ? "text-orange-100" : "text-slate-500")}>
+                                  {debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </>
+                      )}
                     </div>
                   )}
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 text-white rounded-lg shadow-xs" type="submit">
-                      {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
-                    </Button>
-                    {editingEntryId && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-10 border-slate-200 text-slate-700 rounded-lg"
-                        onPress={cancelEditingEntry}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Card>
-
-              {/* Budget Pace Meter */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-slate-900">Budget Pace</h3>
-                    <StatusBadge status={pace.status} />
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">{pace.message}</p>
                 </div>
 
-                <div className="space-y-4">
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
-                      <span>Monthly Variable Spend</span>
-                      <span className="font-mono">
-                        {formatInr(variableSpent)} / {formatInr(variableBudget)}
-                      </span>
-                    </div>
-                    <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Day</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Allowed Today</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Projected End</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Spend History */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Spend History</h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {filteredEntries.length
-                        ? `Showing ${filteredEntries.length} of ${entries.length} entries`
-                        : "No spends logged."}
-                    </p>
-                  </div>
-
-                  {/* Date Filter Buttons */}
-                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "all" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("all")}
-                    >
-                      All
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "today" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("today")}
-                    >
-                      Today
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "yesterday" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("yesterday")}
-                    >
-                      Yesterday
-                    </Button>
-                  </div>
-                </div>
-
-                {filteredEntries.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
-                    No spend entries found for the selected filter.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredEntries.slice(0, 15).map((entry) => {
-                      const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
-                      const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
-                      const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
-                      const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
-                      const categoryLabel = debtCategory?.name ? `Debt: ${debtCategory.name}` : category?.name;
-                      const isEditingThis = editingEntryId === entry.id;
-
+                {/* Payment Method Selector */}
+                <div className="space-y-1.5">
+                  <label className="text-xs font-extrabold text-slate-700 block">Payment Method</label>
+                  <div className="flex flex-wrap gap-1.5 bg-slate-100/80 p-1.5 rounded-2xl border border-slate-200/80">
+                    {paymentMethods.map((method) => {
+                      const isSelected = paidBy === method.id;
                       return (
-                        <div
-                          key={entry.id}
+                        <button
+                          key={method.id}
+                          type="button"
+                          onClick={() => setPaidBy(method.id)}
                           className={cn(
-                            "flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors bg-white",
-                            isEditingThis ? "border-amber-300 bg-amber-50" : "border-slate-200 hover:bg-slate-50/80",
+                            "flex-1 min-w-[75px] py-1.5 px-3 text-xs font-extrabold rounded-xl transition-all text-center",
+                            isSelected
+                              ? "bg-white text-slate-900 shadow-2xs border border-slate-200/80"
+                              : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/60",
                           )}
                         >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {categoryLabel} · {method} · <span className="font-mono text-slate-700">{entry.date}</span>
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <p className="font-mono text-sm font-bold text-slate-900 mr-1">{formatInr(entry.amount)}</p>
-                            <Button
-                              aria-label="Edit spend entry"
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md min-w-0"
-                              onPress={() => startEditingEntry(entry)}
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              aria-label="Delete spend entry"
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md min-w-0"
-                              onPress={() => {
-                                if (editingEntryId === entry.id) cancelEditingEntry();
-                                setEntries((current) => current.filter((item) => item.id !== entry.id));
-                              }}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
-                        </div>
+                          {method.label}
+                        </button>
                       );
                     })}
                   </div>
-                )}
-              </Card>
-            </div>
-          )}
+                </div>
 
-          {/* TAB 2: PLAN & CASHFLOW */}
-          {activeTab === "plan" && (
-            <div className="mt-4 space-y-4">
-              {/* Live Bank Liquidity Manager */}
-              <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <Landmark className="size-4 text-slate-700" />
-                      <p className="text-sm font-bold text-slate-900">
-                        Live Bank Balance & Liquidity Manager ({formatMonthLabel(selectedMonth)})
-                      </p>
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                      Automatically subtracts debts, EMIs, card bills, and living spends as paid.
-                    </p>
+                <div className="space-y-1.5">
+                  <label htmlFor="note" className="text-xs font-extrabold text-slate-700 block">Note (Optional)</label>
+                  <input
+                    id="note"
+                    placeholder="e.g. Grocery store purchase..."
+                    value={note}
+                    onChange={(e) => setNote(e.target.value)}
+                    className="w-full bg-slate-50/80 border border-slate-200/90 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button className="h-11 flex-1 text-sm font-extrabold bg-slate-900 hover:bg-slate-800 text-white rounded-2xl shadow-xs" type="submit">
+                    {editingEntryId ? "Update Transaction" : "Log Spend / Payment"}
+                  </Button>
+                  {editingEntryId && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      className="h-11 border-slate-200 text-slate-700 rounded-2xl font-bold"
+                      onPress={cancelEditingEntry}
+                    >
+                      Cancel
+                    </Button>
+                  )}
+                </div>
+              </form>
+            </div>
+
+            {/* Finexy Activity Table (Recent Transactions) */}
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 sm:p-6 shadow-2xs space-y-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">Recent Transactions</h3>
+                  <p className="text-xs font-medium text-slate-500">
+                    {filteredEntries.length} logged entries
+                  </p>
+                </div>
+
+                {/* Filter & Search Bar */}
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-2.5 size-3.5 text-slate-400" />
+                    <input
+                      placeholder="Search..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="h-8 pl-8 pr-3 text-xs bg-slate-100 border border-slate-200/80 rounded-full w-36 focus:outline-none focus:w-48 transition-all"
+                    />
                   </div>
-                  <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Required Bank Reserve</p>
-                    <p className="font-mono text-xl font-extrabold text-slate-900">{formatInr(liveCashNeededInBank)}</p>
-                    <p className="text-[11px] font-medium text-slate-600">
-                      {totalRemainingPendingOutflows > 0
-                        ? `${formatInr(totalRemainingPendingOutflows)} pending + ₹5k buffer`
-                        : "All outflows cleared! ₹5k buffer intact"}
-                    </p>
+
+                  <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-full border border-slate-200/80">
+                    <button
+                      type="button"
+                      onClick={() => setSpendListFilter("all")}
+                      className={cn(
+                        "px-2.5 py-0.5 text-[11px] font-extrabold rounded-full transition-all",
+                        spendListFilter === "all" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600",
+                      )}
+                    >
+                      All
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setSpendListFilter("today")}
+                      className={cn(
+                        "px-2.5 py-0.5 text-[11px] font-extrabold rounded-full transition-all",
+                        spendListFilter === "today" ? "bg-white text-slate-900 shadow-2xs" : "text-slate-600",
+                      )}
+                    >
+                      Today
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {filteredEntries.length === 0 ? (
+                <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-500 font-medium">
+                  No transaction records found.
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  {filteredEntries.slice(0, 15).map((entry) => {
+                    const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
+                    const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
+                    const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
+                    const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
+                    const categoryLabel = debtCategory?.name ? `Debt: ${debtCategory.name}` : category?.name;
+                    const isEditingThis = editingEntryId === entry.id;
+
+                    const iconObj = categoryOptions.find((c) => c.id === entry.categoryId);
+                    const IconComponent = iconObj?.icon || Wallet;
+
+                    return (
+                      <div
+                        key={entry.id}
+                        className={cn(
+                          "flex items-center justify-between gap-3 rounded-2xl p-3.5 border transition-all bg-white hover:bg-slate-50/80",
+                          isEditingThis ? "border-amber-300 bg-amber-50/60" : "border-slate-200/80",
+                        )}
+                      >
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={cn("size-9 rounded-2xl flex items-center justify-center shrink-0", iconObj?.color || "bg-slate-100 text-slate-700")}>
+                            <IconComponent className="size-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-extrabold text-slate-900">{displayName}</p>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {categoryLabel} · <span className="font-semibold text-slate-700">{method}</span> · <span className="font-mono text-slate-500">{entry.date}</span>
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="flex items-center gap-2 shrink-0">
+                          <p className="font-mono text-base font-black text-slate-900 mr-1">{formatInr(entry.amount)}</p>
+                          <Button
+                            aria-label="Edit spend entry"
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-xl min-w-0"
+                            onPress={() => startEditingEntry(entry)}
+                          >
+                            <Pencil className="size-3.5" />
+                          </Button>
+                          <Button
+                            aria-label="Delete spend entry"
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
+                            onPress={() => {
+                              if (editingEntryId === entry.id) cancelEditingEntry();
+                              setEntries((current) => current.filter((item) => item.id !== entry.id));
+                            }}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Right Column (4 cols): Credit Cards & Budget Pace */}
+          <div className="lg:col-span-4 space-y-6">
+            {/* Finexy Style: My Cards Widget */}
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-slate-900">My Credit Cards</h3>
+                <span className="text-xs font-bold text-slate-400">Limit Utilization</span>
+              </div>
+
+              <div className="space-y-3">
+                {/* Visual HDFC Dark Credit Card */}
+                <div className="rounded-2xl bg-slate-900 text-white p-4 space-y-3 shadow-md">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-extrabold tracking-wider text-slate-300">HDFC Millennia</span>
+                    <Chip color="success" size="sm" variant="soft">Safe Limit</Chip>
+                  </div>
+                  <p className="font-mono text-sm font-extrabold tracking-widest text-slate-300">•••• •••• 6782</p>
+                  <div className="flex justify-between items-end text-xs pt-1 border-t border-slate-800">
+                    <div>
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Used</p>
+                      <p className="font-mono font-bold text-white">₹0</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-slate-400 uppercase font-bold">Limit</p>
+                      <p className="font-mono font-bold text-white">₹75,000</p>
+                    </div>
                   </div>
                 </div>
 
-                {/* Progress */}
-                <div className="space-y-1.5 rounded-lg bg-slate-50 p-3 border border-slate-200">
-                  <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
-                    <span>Outflows Settled</span>
-                    <span className="font-mono">
-                      {formatInr(totalDebtsPaidSoFar)} / {formatInr(totalDebtsOriginalTotal)}
+                {/* Visual Axis Coral Credit Card */}
+                <div className="rounded-2xl bg-[#ff5c38] text-white p-4 space-y-3 shadow-md">
+                  <div className="flex justify-between items-center text-xs">
+                    <span className="font-extrabold tracking-wider text-orange-100">Axis MyZone</span>
+                    <Chip color="success" size="sm" variant="soft">Active</Chip>
+                  </div>
+                  <p className="font-mono text-sm font-extrabold tracking-widest text-orange-100">•••• •••• 4356</p>
+                  <div className="flex justify-between items-end text-xs pt-1 border-t border-white/20">
+                    <div>
+                      <p className="text-[10px] text-orange-100 uppercase font-bold">Used</p>
+                      <p className="font-mono font-bold text-white">₹0</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-[10px] text-orange-100 uppercase font-bold">Limit</p>
+                      <p className="font-mono font-bold text-white">₹50,000</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Budget Pace Widget */}
+            <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+              <div className="flex items-center justify-between">
+                <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
+                <Chip color={pace.status === "green" ? "success" : pace.status === "yellow" ? "warning" : "danger"} size="sm" variant="soft">
+                  {pace.status === "green" ? "Safe" : "Warning"}
+                </Chip>
+              </div>
+              <p className="text-xs font-medium text-slate-500">{pace.message}</p>
+
+              <div className="space-y-3 pt-1">
+                <div>
+                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
+                    <span>Variable Spend ({dayOfMonth}/30 days)</span>
+                    <span className="font-mono font-black text-slate-900">
+                      {formatInr(variableSpent)} / {formatInr(variableBudget)}
                     </span>
                   </div>
-                  <ProgressBar value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2" />
+                  <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                    <p className="text-slate-500 font-bold">Allowed Today</p>
+                    <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                  </div>
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                    <p className="text-slate-500 font-bold">Projected End</p>
+                    <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                  </div>
                 </div>
               </div>
-
-              {/* Income Streams */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</h3>
-                    <p className="text-xs text-slate-500">Toggle switch when salary/freelance money is received.</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
-                    onPress={() => setShowAddIncome(!showAddIncome)}
-                  >
-                    <Plus className="mr-1 size-3.5" /> Add Income
-                  </Button>
-                </div>
-
-                {showAddIncome && (
-                  <form onSubmit={handleAddIncome} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
-                    <p className="text-xs font-bold text-slate-900">Add Income Stream</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <input
-                        placeholder="Source (e.g. Freelance)"
-                        value={newIncomeName}
-                        onChange={(e) => setNewIncomeName(e.target.value)}
-                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
-                      />
-                      <input
-                        placeholder="Amount (₹)"
-                        type="number"
-                        value={newIncomeAmount}
-                        onChange={(e) => setNewIncomeAmount(e.target.value)}
-                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
-                      />
-                      <input
-                        placeholder="Expected date (e.g. Mid Sep)"
-                        value={newIncomeDate}
-                        onChange={(e) => setNewIncomeDate(e.target.value)}
-                        className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md"
-                      />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 text-white">Save</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onPress={() => setShowAddIncome(false)}>Cancel</Button>
-                    </div>
-                  </form>
-                )}
-
-                <div className="space-y-2">
-                  {currentIncomes.map((source) => (
-                    <div key={source.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white hover:bg-slate-50/80 transition-colors">
-                      <div className="min-w-0">
-                        <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-semibold text-slate-900">{source.name}</p>
-                          <Chip color={source.status === "received" ? "success" : "default"} size="sm" variant="soft">
-                            {source.status === "received" ? "Received" : `Pending (${source.expectedDate})`}
-                          </Chip>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <p className="font-mono text-sm font-bold text-slate-900">{formatInr(source.amount)}</p>
-                        <Switch
-                          isSelected={source.status === "received"}
-                          onChange={() => toggleIncomeStatus(source.id)}
-                          aria-label={`Toggle status for ${source.name}`}
-                        />
-                        {monthlyIncomes[selectedMonth] && (
-                          <Button size="sm" variant="ghost" className="size-7 p-0 text-slate-400 hover:text-red-600 min-w-0" onPress={() => deleteIncome(source.id)}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </Card>
-
-              {/* Custom Debts */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Custom Debts ({formatMonthLabel(selectedMonth)})</h3>
-                    <p className="text-xs text-slate-500">Track loans from friends or lenders.</p>
-                  </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
-                    onPress={() => setShowAddDebt(!showAddDebt)}
-                  >
-                    <Plus className="mr-1 size-3.5" /> Add Debt
-                  </Button>
-                </div>
-
-                {showAddDebt && (
-                  <form onSubmit={handleAddDebt} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
-                    <p className="text-xs font-bold text-slate-900">Add Custom Debt</p>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <input placeholder="Debt name" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
-                      <input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
-                      <input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border border-slate-200 text-xs h-9 px-3 rounded-md" />
-                    </div>
-                    <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 text-white">Save</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onPress={() => setShowAddDebt(false)}>Cancel</Button>
-                    </div>
-                  </form>
-                )}
-
-                {currentCustomDebts.length === 0 ? (
-                  <p className="text-xs text-slate-500 italic">No custom debts for {formatMonthLabel(selectedMonth)}.</p>
-                ) : (
-                  <div className="space-y-2">
-                    {currentCustomDebts.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white">
-                        <div>
-                          <p className="text-sm font-semibold text-slate-900">{d.name} ({d.lender})</p>
-                          {d.note && <p className="text-xs text-slate-500">{d.note}</p>}
-                        </div>
-                        <div className="flex items-center gap-3">
-                          <p className="font-mono text-sm font-bold text-slate-900">{formatInr(d.totalAmount)}</p>
-                          <Button size="sm" variant="ghost" className="size-7 p-0 text-slate-400 hover:text-red-600 min-w-0" onPress={() => deleteDebt(d.id)}>
-                            <Trash2 className="size-3.5" />
-                          </Button>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </Card>
             </div>
-          )}
-
-          {/* TAB 3: WEALTH INVESTMENT ENGINE */}
-          {activeTab === "invest" && (
-            <div className="mt-4 space-y-4">
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden p-0">
-                <div className="bg-slate-900 p-4 sm:p-5 text-white">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="size-4 text-emerald-400" />
-                    <h2 className="text-base font-bold">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
-                  </div>
-                  <p className="text-xs text-slate-300 mt-1 font-normal">{investmentPlan.strategyGuidance}</p>
-                </div>
-                <div className="p-4 sm:p-5 space-y-4">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-1">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Monthly Surplus Invested</span>
-                      <span className="font-mono text-2xl font-extrabold text-emerald-700">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Fund Allocation Breakdown:</p>
-
-                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                      <div className="flex justify-between text-sm font-bold text-slate-900">
-                        <span>{investmentPlan.liquidFundName}</span>
-                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.liquidFundAmount)}</span>
-                      </div>
-                      <p className="text-xs text-slate-500">{investmentPlan.liquidFundNote}</p>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                      <div className="flex justify-between text-sm font-bold text-slate-900">
-                        <span>{investmentPlan.niftyIndexFundName}</span>
-                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.niftyIndexFundAmount)}</span>
-                      </div>
-                      <p className="text-xs text-slate-500">{investmentPlan.niftyIndexFundNote}</p>
-                    </div>
-
-                    <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
-                      <div className="flex justify-between text-sm font-bold text-slate-900">
-                        <span>{investmentPlan.flexiCapFundName}</span>
-                        <span className="font-mono text-emerald-700">{formatInr(investmentPlan.flexiCapFundAmount)}</span>
-                      </div>
-                      <p className="text-xs text-slate-500">{investmentPlan.flexiCapFundNote}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* TAB 4: RUNWAY & TIMELINE */}
-          {activeTab === "runway" && (
-            <div className="mt-4 space-y-4">
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
-                <div>
-                  <h3 className="text-base font-bold text-slate-900">Salary-Only Runway Forecast</h3>
-                  <p className="text-xs text-slate-500 font-medium">Trajectory towards Zero EMI freedom.</p>
-                </div>
-                <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-medium">Living budget</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(octoberSeedData.futureMonthlyLivingBudget)}</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-medium">Zero EMI Month</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{firstZeroEmiMonth?.label ?? "TBD"}</p>
-                  </div>
-                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-medium">Free Months (&gt;₹20k)</p>
-                    <p className="mt-0.5 font-mono text-sm font-bold text-emerald-700">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} mo</p>
-                  </div>
-                </div>
-              </Card>
-            </div>
-          )}
-
-          {/* TAB 5: EMIS LEDGER */}
-          {activeTab === "emis" && (
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Personal EMIs</h3>
-                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthPersonalEmisTotal)}/mo</p>
-                  </div>
-                  <div className="space-y-2">
-                    {currentPersonalEmis.map((e) => (
-                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                        <span className="font-semibold text-slate-800">{e.name}</span>
-                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-
-                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Venkat Payable EMIs</h3>
-                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatPayableTotal)}/mo</p>
-                  </div>
-                  <div className="space-y-2">
-                    {currentVenkatPayableEmis.map((e) => (
-                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                        <span className="font-semibold text-slate-800">{e.name}</span>
-                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-
-                <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">Venkat Receivable (On Name)</h3>
-                    <p className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</p>
-                  </div>
-                  <div className="space-y-2">
-                    {currentVenkatOnYourNameEmis.map((e) => (
-                      <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
-                        <span className="font-semibold text-slate-800">{e.name}</span>
-                        <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
-                      </div>
-                    ))}
-                  </div>
-                </Card>
-              </div>
-            </div>
-          )}
-
-          {/* TAB 6: CARDS DASHBOARD */}
-          {activeTab === "cards" && (
-            <div className="mt-4 space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {octoberSeedData.cards.map((card) => {
-                  const cardStatus = getCardUsageStatus(card);
-                  return (
-                    <Card key={card.name} className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 space-y-3">
-                      <div className="flex justify-between items-center">
-                        <h3 className="text-base font-bold text-slate-900">{card.name}</h3>
-                        <Chip color={cardStatus.status === "freeze" ? "danger" : "success"} size="sm" variant="soft">
-                          {cardStatus.status === "freeze" ? "FREEZE" : "SAFE"}
-                        </Chip>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
-                            <span>Limit Utilized</span>
-                            <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
-                          </div>
-                          <ProgressBar value={cardStatus.utilization * 100} className="h-2" />
-                        </div>
-                        <div className="flex justify-between text-xs font-medium text-slate-500">
-                          <span>Used: {formatInr(cardStatus.used)}</span>
-                          <span>Available: {formatInr(card.available)}</span>
-                        </div>
-                      </div>
-                    </Card>
-                  );
-                })}
-              </div>
-            </div>
-          )}
+          </div>
         </div>
-      </section>
+      </div>
     </main>
   );
 }
