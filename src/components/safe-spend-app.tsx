@@ -314,6 +314,9 @@ export function SafeSpendApp() {
     [dynamicBankCardGroups],
   );
 
+  const totalCombinedCreditLimit = 82000;
+  const totalCreditUtilizationPercent = Math.round((totalCreditCardDues / totalCombinedCreditLimit) * 1000) / 10;
+
   // Current month incomes
   const currentIncomes: IncomeSource[] = useMemo(() => {
     if (monthlyIncomes[selectedMonth]) {
@@ -1869,134 +1872,172 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (CARD-LEVEL SPEND TRACKING & LIMITS UPDATE) */}
+          {/* TAB 5: FACTUAL CREDIT CARDS MANAGEMENT (STREAMLINED, ZERO DUPLICATIONS, HIGH-CONTRAST UI) */}
           {activeTab === "cards" && (
             <div className="space-y-6">
-              {/* Grand Summary Badge Header */}
-              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+              {/* Grand Summary Header Card */}
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                   <div>
                     <h3 className="text-2xl font-black text-slate-900">Credit Cards & Shared Limits</h3>
-                    <p className="text-xs text-slate-400 font-medium">8 Total Cards · Card-Specific Spends & Shared Limits Auto-Synced</p>
+                    <p className="text-xs text-slate-400 font-semibold">8 Factual Credit Cards across 3 Shared Bank Limit Groups</p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="text-right">
+                  
+                  <div className="flex items-center gap-4 bg-slate-50 p-3 rounded-2xl border border-slate-200/80">
+                    <div className="text-right px-2">
                       <p className="text-[10px] font-extrabold text-slate-400 uppercase">Total Synced Dues</p>
                       <p className="text-2xl font-black font-mono text-[#D96653]">{formatInr(totalCreditCardDues)}</p>
                     </div>
-                    <div className="text-right pl-3 border-l border-slate-200">
-                      <p className="text-[10px] font-extrabold text-slate-400 uppercase">Total Combined Limit</p>
+                    <div className="h-8 w-px bg-slate-200" />
+                    <div className="text-right px-2">
+                      <p className="text-[10px] font-extrabold text-slate-400 uppercase">Combined Limit</p>
                       <p className="text-2xl font-black font-mono text-slate-900">₹82,000</p>
                     </div>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
-                  {dynamicBankCardGroups.map((g) => (
-                    <div key={g.bankName} className="rounded-2xl bg-slate-50 border border-slate-200/70 p-3.5">
-                      <p className="text-xs font-extrabold text-slate-500 uppercase">{g.bankName}</p>
-                      <p className="text-lg font-mono font-black text-slate-900 mt-0.5">
-                        {formatInr(g.totalOutstandingSpend)} spent / {formatInr(g.sharedLimit)}
-                      </p>
-                      <p className="text-[11px] font-bold text-emerald-600">
-                        Available Limit: {formatInr(g.sharedLimit - g.totalOutstandingSpend)}
-                      </p>
-                    </div>
-                  ))}
+                {/* Overall Credit Utilization Meter */}
+                <div className="space-y-2 border-t border-slate-100 pt-4">
+                  <div className="flex justify-between items-center text-xs font-extrabold text-slate-700">
+                    <span>Overall Credit Limit Utilization</span>
+                    <span className="font-mono text-slate-900">
+                      {formatInr(totalCreditCardDues)} / ₹82,000 ({totalCreditUtilizationPercent}% Used)
+                    </span>
+                  </div>
+                  <ProgressBar value={totalCreditUtilizationPercent} className="h-2.5" />
+                  <p className="text-[11px] text-slate-400 font-medium">
+                    Remaining Available Limit across all 3 Bank Groups: <span className="font-mono font-bold text-emerald-600">{formatInr(totalCombinedCreditLimit - totalCreditCardDues)}</span>
+                  </p>
                 </div>
               </div>
 
-              {/* PURE HANDCRAFTED CSS CREDIT CARD UI CARDS (WITH CARD-SPECIFIC SPENDS TRACKING) */}
+              {/* CLEAN 3 BANK CARDS GRID (NO DUPLICATED BOXES!) */}
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {dynamicBankCardGroups.map((group) => (
-                  <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4 flex flex-col justify-between">
-                    <div className="space-y-4">
-                      {/* Pure CSS Metallic Credit Card Design */}
-                      <div
-                        className={cn(
-                          "relative rounded-2xl p-5 space-y-4 shadow-xl border border-white/20 text-white flex flex-col justify-between h-52 transition-all hover:scale-[1.02] cursor-pointer",
-                          group.gradientStyle,
-                        )}
-                      >
-                        {/* Subtle Metallic Card Surface Shine */}
-                        <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none rounded-2xl" />
+                {dynamicBankCardGroups.map((group) => {
+                  const limitUsedPercent = Math.round((group.totalOutstandingSpend / group.sharedLimit) * 100);
+                  const availableLimit = group.sharedLimit - group.totalOutstandingSpend;
 
-                        {/* Top Header Row: EMV Chip, Contactless Wave & Crisp Active Group Tag */}
-                        <div className="relative z-10 flex items-center justify-between">
-                          <div className="flex items-center gap-2.5">
-                            {/* Realistic Golden EMV Chip SVG Graphic */}
-                            <div className="w-10 h-7 rounded-md bg-gradient-to-tr from-amber-300 via-yellow-400 to-amber-200 border border-amber-500/70 p-1 flex items-center justify-center shadow-xs">
-                              <div className="w-full h-full border border-amber-700/40 rounded-[2px] grid grid-cols-2 gap-0.5 opacity-90" />
+                  return (
+                    <div key={group.bankName} className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-5 flex flex-col justify-between hover:shadow-md transition-all">
+                      <div className="space-y-4">
+                        {/* Handcrafted Visual Credit Card Header */}
+                        <div
+                          className={cn(
+                            "relative rounded-2xl p-5 shadow-xl border border-white/20 text-white flex flex-col justify-between h-48 transition-all",
+                            group.gradientStyle,
+                          )}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/10 to-white/0 pointer-events-none rounded-2xl" />
+
+                          {/* Top Row: Chip, Contactless Wave & Crisp Active Badge */}
+                          <div className="relative z-10 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <div className="w-9 h-6.5 rounded-md bg-gradient-to-tr from-amber-300 via-yellow-400 to-amber-200 border border-amber-500/70 p-1 flex items-center justify-center shadow-xs">
+                                <div className="w-full h-full border border-amber-700/40 rounded-[2px] grid grid-cols-2 gap-0.5 opacity-90" />
+                              </div>
+                              <div className="text-white/80">
+                                <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                  <path d="M8.5 14.5a5 5 0 0 1 0-5" />
+                                  <path d="M12 17a8.5 8.5 0 0 0 0-10" />
+                                  <path d="M15.5 19.5a12 12 0 0 0 0-15" />
+                                </svg>
+                              </div>
                             </div>
 
-                            {/* Contactless Waves SVG */}
-                            <div className="text-white/80">
-                              <svg className="size-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <path d="M8.5 14.5a5 5 0 0 1 0-5" />
-                                <path d="M12 17a8.5 8.5 0 0 0 0-10" />
-                                <path d="M15.5 19.5a12 12 0 0 0 0-15" />
-                              </svg>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500 text-white text-[9px] font-black tracking-wider uppercase shadow-xs border border-emerald-300/60">
+                              <span className="size-1.5 rounded-full bg-white animate-pulse" /> Active
+                            </span>
+                          </div>
+
+                          {/* Middle Row: Bank Name & Shared Limit */}
+                          <div className="relative z-10 space-y-0.5">
+                            <p className="text-[10px] font-black tracking-widest uppercase text-slate-300">{group.bankName}</p>
+                            <div className="flex items-baseline gap-1.5">
+                              <span className="text-[10px] font-bold text-slate-300 uppercase">Shared Limit:</span>
+                              <span className="font-mono text-xl font-black text-white">{formatInr(group.sharedLimit)}</span>
                             </div>
                           </div>
 
-                          {/* CRISP HIGH-CONTRAST ACTIVE GROUP TAG */}
-                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500 text-white text-[10px] font-black tracking-wider uppercase shadow-md border border-emerald-300/60">
-                            <span className="size-1.5 rounded-full bg-white animate-pulse" /> Active Group
-                          </span>
-                        </div>
-
-                        {/* Middle Row: Bank Group Name & Shared Limit */}
-                        <div className="relative z-10 space-y-0.5">
-                          <p className="text-[10px] font-black tracking-widest uppercase text-slate-300">{group.bankName}</p>
-                          <div className="flex items-baseline gap-2">
-                            <span className="text-[10px] font-bold text-slate-300 uppercase">Shared Limit:</span>
-                            <span className="font-mono text-2xl font-black text-white">{formatInr(group.sharedLimit)}</span>
-                          </div>
-                        </div>
-
-                        {/* Bottom Row: Cardholder Name & Group Outstanding */}
-                        <div className="relative z-10 flex justify-between items-end border-t border-white/20 pt-2.5 text-xs">
-                          <div>
-                            <p className="text-[9px] uppercase font-bold text-slate-300">Cardholder</p>
-                            <p className="font-black text-white tracking-wider text-xs">SAI TEJA</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-[9px] uppercase font-bold text-amber-300">Group Outstanding</p>
-                            <p className="font-mono font-black text-sm text-white">{formatInr(group.totalOutstandingSpend)}</p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Individual Cards List in Group (With Card-Specific Logged Spends) */}
-                      <div className="space-y-2 pt-1">
-                        <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 px-1">Individual Card Spends</p>
-                        {group.cards.map((card) => (
-                          <div key={card.id} className="flex items-center justify-between p-3 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition-all">
+                          {/* Bottom Row: Cardholder & Group Outstanding */}
+                          <div className="relative z-10 flex justify-between items-end border-t border-white/20 pt-2 text-xs">
                             <div>
-                              <p className="font-extrabold text-slate-900 text-xs">{card.name}</p>
-                              <p className="text-[10px] text-slate-400 font-semibold">{card.brandTag} · since {card.sinceDate}</p>
-                              {card.addedSpend > 0 && (
-                                <p className="text-[10px] font-extrabold text-emerald-600 mt-0.5">
-                                  + {formatInr(card.addedSpend)} logged spend
-                                </p>
-                              )}
+                              <p className="text-[9px] uppercase font-bold text-slate-300">Cardholder</p>
+                              <p className="font-black text-white tracking-wider text-xs">SAI TEJA</p>
                             </div>
                             <div className="text-right">
-                              <span className="font-mono text-xs font-black text-slate-900 block">
-                                {card.spendAmount > 0 ? formatInr(card.spendAmount) : "₹0"}
-                              </span>
+                              <p className="text-[9px] uppercase font-bold text-amber-300">Group Outstanding</p>
+                              <p className="font-mono font-black text-sm text-white">{formatInr(group.totalOutstandingSpend)}</p>
                             </div>
                           </div>
-                        ))}
+                        </div>
+
+                        {/* Shared Limit Usage Progress Bar */}
+                        <div className="space-y-1.5 px-1">
+                          <div className="flex justify-between items-center text-[11px] font-extrabold text-slate-600">
+                            <span>Limit Used: {limitUsedPercent}%</span>
+                            <span className="font-mono text-slate-900">{formatInr(group.totalOutstandingSpend)} / {formatInr(group.sharedLimit)}</span>
+                          </div>
+                          <ProgressBar value={limitUsedPercent} className="h-2" />
+                        </div>
+
+                        {/* Individual Cards List in Group */}
+                        <div className="space-y-2 pt-1">
+                          <div className="flex items-center justify-between px-1">
+                            <p className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Cards in this Shared Group</p>
+                            <span className="text-[10px] font-bold text-slate-400">{group.cards.length} Cards</span>
+                          </div>
+
+                          {group.cards.map((card) => (
+                            <div
+                              key={card.id}
+                              className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-100/80 transition-all group"
+                            >
+                              <div className="space-y-0.5">
+                                <p className="font-extrabold text-slate-900 text-xs flex items-center gap-1.5">
+                                  <CreditCardIcon className="size-3.5 text-[#D96653]" /> {card.name}
+                                </p>
+                                <p className="text-[10px] text-slate-400 font-semibold">{card.brandTag}</p>
+                                {card.addedSpend > 0 && (
+                                  <p className="text-[10px] font-extrabold text-emerald-600">
+                                    + {formatInr(card.addedSpend)} logged this month
+                                  </p>
+                                )}
+                              </div>
+                              <div className="text-right space-y-1">
+                                <span className="font-mono text-xs font-black text-slate-900 block">
+                                  {card.spendAmount > 0 ? formatInr(card.spendAmount) : "₹0"}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPaidBy(
+                                      group.bankName.includes("Axis")
+                                        ? "axis"
+                                        : group.bankName.includes("HDFC")
+                                        ? "hdfc"
+                                        : "yes-bank",
+                                    );
+                                    setSelectedCardId(card.id);
+                                    setShowSpendModal(true);
+                                  }}
+                                  className="text-[10px] font-extrabold text-[#D96653] hover:underline cursor-pointer opacity-80 group-hover:opacity-100"
+                                >
+                                  + Charge
+                                </button>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {/* Clean Prominent Available Limit Footer */}
+                      <div className="pt-3 border-t border-slate-100 flex justify-between items-center p-3 rounded-2xl bg-emerald-50/70 border border-emerald-200/60">
+                        <span className="text-xs font-extrabold text-emerald-800">Available Limit</span>
+                        <span className="font-mono text-sm font-black text-emerald-700">{formatInr(availableLimit)}</span>
                       </div>
                     </div>
-
-                    <div className="pt-2 border-t border-slate-100 flex justify-between items-center text-xs font-extrabold text-slate-600">
-                      <span>Available Credit</span>
-                      <span className="font-mono font-black text-emerald-600">{formatInr(group.sharedLimit - group.totalOutstandingSpend)}</span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           )}
