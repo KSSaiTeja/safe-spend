@@ -201,7 +201,6 @@ export function SafeSpendApp() {
 
   // Custom UI Popover / Modal states
   const [showCalendarPopover, setShowCalendarPopover] = useState(false);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
 
@@ -214,14 +213,6 @@ export function SafeSpendApp() {
   const [newIncomeName, setNewIncomeName] = useState("");
   const [newIncomeAmount, setNewIncomeAmount] = useState("");
   const [newIncomeDate, setNewIncomeDate] = useState("");
-  const [showAddIncome, setShowAddIncome] = useState(false);
-
-  // Custom Debt form states
-  const [showAddDebt, setShowAddDebt] = useState(false);
-  const [newDebtName, setNewDebtName] = useState("");
-  const [newDebtLender, setNewDebtLender] = useState("");
-  const [newDebtAmount, setNewDebtAmount] = useState("");
-  const [newDebtPriority, setNewDebtPriority] = useState<"high" | "normal">("high");
 
   useEffect(() => {
     window.localStorage.setItem(SPEND_STORAGE_KEY, JSON.stringify(entries));
@@ -243,7 +234,7 @@ export function SafeSpendApp() {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
 
-  // Current month incomes (Sai's real income sources)
+  // Current month incomes
   const currentIncomes: IncomeSource[] = useMemo(() => {
     if (monthlyIncomes[selectedMonth]) {
       return monthlyIncomes[selectedMonth];
@@ -284,7 +275,7 @@ export function SafeSpendApp() {
     [customDebts, selectedMonth],
   );
 
-  // Month calculations
+  // Month calculations & EMI Section Totals
   const monthTotalIncome = useMemo(() => sumAmounts(currentIncomes), [currentIncomes]);
   const monthIncomeReceived = useMemo(
     () => sumAmounts(currentIncomes.filter((i) => i.status === "received")),
@@ -292,9 +283,11 @@ export function SafeSpendApp() {
   );
   const monthPersonalEmisTotal = useMemo(() => sumAmounts(currentPersonalEmis), [currentPersonalEmis]);
   const monthVenkatPayableTotal = useMemo(() => sumAmounts(currentVenkatPayableEmis), [currentVenkatPayableEmis]);
-  const monthCustomDebtsTotal = useMemo(() => sumAmounts(currentCustomDebts.map(d => ({ amount: d.totalAmount }))), [currentCustomDebts]);
-  const monthOutgoingEmis = monthPersonalEmisTotal + monthVenkatPayableTotal;
   const monthVenkatDebitOnNameTotal = useMemo(() => sumAmounts(currentVenkatOnYourNameEmis), [currentVenkatOnYourNameEmis]);
+  const monthCustomDebtsTotal = useMemo(() => sumAmounts(currentCustomDebts.map(d => ({ amount: d.totalAmount }))), [currentCustomDebts]);
+  
+  // Grand Total Outgoing EMIs
+  const monthOutgoingEmis = monthPersonalEmisTotal + monthVenkatPayableTotal;
   const monthOneTimeTotal = useMemo(() => sumAmounts(currentOneTimeExpenses), [currentOneTimeExpenses]);
 
   const monthLivingBudget = selectedMonth === "2026-09" ? 18000 : 15500;
@@ -458,7 +451,6 @@ export function SafeSpendApp() {
   );
 
   const monthPreviews = useMemo(() => generateMonthPreviews(octoberSeedData), []);
-  const firstZeroEmiMonth = monthPreviews.find((preview) => preview.status === "emi-zero");
 
   const variableCategoryIds = new Set(
     octoberSeedData.expenses.filter((expense) => expense.kind === "variable").map((expense) => expense.id),
@@ -499,57 +491,6 @@ export function SafeSpendApp() {
 
     return list;
   }, [entries, spendListFilter, searchQuery]);
-
-  const selectedCategoryObj = useMemo(() => {
-    const livingCat = categoryOptions.find((c) => c.id === categoryId);
-    if (livingCat) return { label: livingCat.label, Icon: livingCat.icon, sub: livingCat.budget, color: livingCat.color };
-    const debtCat = debtPaymentStats.find((d) => d.id === categoryId);
-    if (debtCat) return { label: debtCat.name, Icon: debtCat.priority === "high" ? AlertCircle : UserCheck, sub: debtCat.isCleared ? "Cleared" : formatInr(debtCat.remainingBalance), color: "text-amber-600 bg-amber-50" };
-    return { label: "Select Category", Icon: Wallet, sub: "", color: "text-slate-700 bg-slate-50" };
-  }, [categoryId, debtPaymentStats]);
-
-  function handleAddIncome(e: FormEvent) {
-    e.preventDefault();
-    const parsed = Number(newIncomeAmount);
-    if (!newIncomeName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
-
-    const newSource: IncomeSource = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: newIncomeName.trim(),
-      amount: Math.round(parsed),
-      expectedDate: newIncomeDate.trim() || "Expected this month",
-      status: "expected",
-    };
-
-    setMonthlyIncomes((prev) => ({
-      ...prev,
-      [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
-    }));
-
-    setNewIncomeName("");
-    setNewIncomeAmount("");
-    setNewIncomeDate("");
-    setShowAddIncome(false);
-  }
-
-  function toggleIncomeStatus(sourceId: string) {
-    setMonthlyIncomes((prev) => {
-      const list = prev[selectedMonth] ?? currentIncomes;
-      const updated = list.map((item) =>
-        item.id === sourceId
-          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
-          : item,
-      );
-      return { ...prev, [selectedMonth]: updated };
-    });
-  }
-
-  function deleteIncome(sourceId: string) {
-    setMonthlyIncomes((prev) => {
-      const list = prev[selectedMonth] ?? currentIncomes;
-      return { ...prev, [selectedMonth]: list.filter((item) => item.id !== sourceId) };
-    });
-  }
 
   function startEditingEntry(entry: SpendEntry) {
     setEditingEntryId(entry.id);
@@ -610,36 +551,15 @@ export function SafeSpendApp() {
     setShowSpendModal(false);
   }
 
-  function handleAddDebt(e: FormEvent) {
-    e.preventDefault();
-    const parsed = Number(newDebtAmount);
-    if (!newDebtName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
-
-    const newDebt: CustomDebt = {
-      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
-      name: newDebtName.trim(),
-      lender: newDebtLender.trim() || "Private Lender",
-      totalAmount: Math.round(parsed),
-      category: "person",
-      priority: newDebtPriority,
-      month: selectedMonth,
-    };
-
-    setCustomDebts((prev) => ({
-      ...prev,
-      [selectedMonth]: [...(prev[selectedMonth] ?? []), newDebt],
-    }));
-
-    setNewDebtName("");
-    setNewDebtLender("");
-    setNewDebtAmount("");
-    setShowAddDebt(false);
-  }
-
-  function deleteDebt(debtId: string) {
-    setCustomDebts((prev) => {
-      const list = prev[selectedMonth] ?? [];
-      return { ...prev, [selectedMonth]: list.filter((item) => item.id !== debtId) };
+  function toggleIncomeStatus(sourceId: string) {
+    setMonthlyIncomes((prev) => {
+      const list = prev[selectedMonth] ?? currentIncomes;
+      const updated = list.map((item) =>
+        item.id === sourceId
+          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
+          : item,
+      );
+      return { ...prev, [selectedMonth]: updated };
     });
   }
 
@@ -675,201 +595,148 @@ export function SafeSpendApp() {
     return { daysInMonth, startDayOfWeek, days: list };
   }, [spendDate]);
 
+  const navItems = [
+    { id: "spend", label: "Spend Tracker", icon: LayoutGrid },
+    { id: "plan", label: "Overview & Plan", icon: FileText },
+    { id: "invest", label: "Invest Strategy", icon: PiggyBank },
+    { id: "emis", label: "EMIs & Debt Ledger", icon: CreditCardIcon },
+    { id: "cards", label: "Credit Cards", icon: Wallet },
+  ] as const;
+
   return (
-    <div className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans flex flex-col md:flex-row">
-      {/* Finexy Vertical Left Sidebar Dock */}
-      <aside className="hidden lg:flex flex-col items-center justify-between w-20 py-5 px-3 bg-white border-r border-slate-200/70 shrink-0 sticky top-0 h-screen z-40">
-        <div className="flex flex-col items-center gap-6">
-          <div className="flex size-10 items-center justify-center rounded-2xl bg-[#ff5c38] text-white shadow-md shadow-[#ff5c38]/30 cursor-pointer">
-            <Landmark className="size-5" />
+    <div className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans flex flex-col lg:flex-row">
+      {/* PERFECT EXPANDED DESKTOP SIDEBAR WITH CLEAR TEXT TITLES (#D96653 COLOR) */}
+      <aside className="hidden lg:flex flex-col justify-between w-64 bg-white border-r border-slate-200/80 p-5 shrink-0 sticky top-0 h-screen z-40">
+        <div className="space-y-6">
+          {/* Logo & Brand Header */}
+          <div className="flex items-center gap-3 px-2">
+            <div className="flex size-10 items-center justify-center rounded-2xl bg-[#D96653] text-white shadow-md shadow-[#D96653]/30">
+              <Landmark className="size-5" />
+            </div>
+            <div>
+              <span className="text-xl font-black tracking-tight text-slate-900">SafeSpend<span className="text-[#D96653]">.</span></span>
+              <p className="text-[10px] font-bold text-slate-400">FINTECH DASHBOARD</p>
+            </div>
           </div>
 
-          <div className="flex flex-col items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setActiveTab("spend")}
-              className={cn(
-                "size-10 rounded-2xl flex items-center justify-center transition-all",
-                activeTab === "spend" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
-              )}
-              title="Spend Tracker"
-            >
-              <LayoutGrid className="size-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setShowCalendarPopover(true)}
-              className="size-10 rounded-2xl flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all"
-              title="Date Picker"
-            >
-              <CalendarIcon className="size-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("plan")}
-              className={cn(
-                "size-10 rounded-2xl flex items-center justify-center transition-all",
-                activeTab === "plan" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
-              )}
-              title="Overview & Plan"
-            >
-              <FileText className="size-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("invest")}
-              className={cn(
-                "size-10 rounded-2xl flex items-center justify-center transition-all",
-                activeTab === "invest" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
-              )}
-              title="Investments"
-            >
-              <PiggyBank className="size-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("emis")}
-              className={cn(
-                "size-10 rounded-2xl flex items-center justify-center transition-all",
-                activeTab === "emis" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
-              )}
-              title="EMIs Ledger"
-            >
-              <CreditCardIcon className="size-5" />
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab("cards")}
-              className={cn(
-                "size-10 rounded-2xl flex items-center justify-center transition-all",
-                activeTab === "cards" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-400 hover:text-slate-700 hover:bg-slate-100",
-              )}
-              title="Credit Cards"
-            >
-              <Wallet className="size-5" />
-            </button>
+          {/* Clear Sidebar Navigation Links */}
+          <div className="space-y-1">
+            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 px-3 pb-2">Main Navigation</p>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "w-full flex items-center gap-3 px-3.5 py-3 rounded-2xl text-xs font-black transition-all cursor-pointer",
+                    isActive
+                      ? "bg-[#D96653] text-white shadow-sm shadow-[#D96653]/30"
+                      : "text-slate-600 hover:text-slate-900 hover:bg-slate-100",
+                  )}
+                >
+                  <Icon className={cn("size-4 shrink-0", isActive ? "text-white" : "text-slate-500")} />
+                  <span className="truncate">{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-3">
+        {/* Bottom Sidebar User & Reset Actions */}
+        <div className="space-y-3 border-t border-slate-100 pt-4 px-1">
+          <div className="flex items-center gap-3">
+            <div className="size-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-black">
+              SK
+            </div>
+            <div className="min-w-0">
+              <p className="text-xs font-extrabold text-slate-900 truncate">Sai Teja</p>
+              <p className="text-[10px] font-medium text-slate-400 truncate">sai@safe-spend.io</p>
+            </div>
+          </div>
+
           <button
             type="button"
             onClick={resetLocalData}
-            className="size-9 rounded-xl flex items-center justify-center text-slate-400 hover:text-red-600 hover:bg-red-50"
-            title="Reset Local Data"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-red-600 hover:bg-red-50 border border-slate-200/80 transition-all"
           >
-            <RefreshCcw className="size-4" />
+            <RefreshCcw className="size-3.5" /> Reset App Data
           </button>
         </div>
       </aside>
 
-      {/* Main Workspace */}
+      {/* Main App Workspace (NO TOP NAVBAR DUPLICATION!) */}
       <div className="flex-1 min-w-0 pb-20">
-        {/* Finexy Header Navbar */}
+        {/* Top Header Action Bar (Clean Single Header, No Duplicate Nav Bar) */}
         <header className="sticky top-0 z-30 bg-white/95 border-b border-slate-200/70 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-8">
           <div className="mx-auto max-w-6xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            {/* Logo & Navigation Menu Pills */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="flex size-8 items-center justify-center rounded-xl bg-[#ff5c38] text-white shadow-sm shadow-[#ff5c38]/30">
+            {/* Mobile Header Brand & Primary Actions */}
+            <div className="flex items-center justify-between lg:justify-start gap-3">
+              <div className="flex items-center gap-2.5 lg:hidden">
+                <div className="flex size-9 items-center justify-center rounded-2xl bg-[#D96653] text-white shadow-sm">
                   <Landmark className="size-4" />
                 </div>
-                <span className="text-lg font-black tracking-tight text-slate-900">SafeSpend<span className="text-[#ff5c38]">.</span></span>
+                <span className="text-lg font-black tracking-tight text-slate-900">SafeSpend<span className="text-[#D96653]">.</span></span>
               </div>
 
-              <nav className="flex items-center gap-1 bg-slate-100/90 p-1 rounded-full border border-slate-200/60 overflow-x-auto no-scrollbar">
+              {/* Header Date & Month Selector Pills */}
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => setActiveTab("spend")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all",
-                    activeTab === "spend" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                  )}
+                  onClick={() => setShowCalendarPopover(true)}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full border border-slate-200 bg-white text-xs font-black text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer active:scale-95 transition-all"
                 >
-                  Spend Tracker
+                  <CalendarIcon className="size-3.5 text-[#D96653]" />
+                  <span>{formatDateFormatted(spendDate)}</span>
+                  <ChevronDown className="size-3 text-slate-400" />
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => setActiveTab("plan")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all",
-                    activeTab === "plan" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                  )}
+                  onClick={() => setShowMonthDropdown(true)}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full border border-slate-200 bg-slate-100 text-xs font-black text-slate-900 hover:bg-slate-200 cursor-pointer"
                 >
-                  Overview & Plan
+                  <span>{formatMonthLabel(selectedMonth)}</span>
+                  <ChevronDown className="size-3 text-slate-500" />
                 </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("invest")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all",
-                    activeTab === "invest" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                  )}
-                >
-                  Invest
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("emis")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all",
-                    activeTab === "emis" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                  )}
-                >
-                  EMIs
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setActiveTab("cards")}
-                  className={cn(
-                    "px-4 py-1.5 rounded-full text-xs font-extrabold whitespace-nowrap transition-all",
-                    activeTab === "cards" ? "bg-[#18181b] text-white shadow-xs" : "text-slate-600 hover:text-slate-900",
-                  )}
-                >
-                  Cards
-                </button>
-              </nav>
+              </div>
             </div>
 
-            {/* Right Action Bar */}
+            {/* Quick Spend Primary Action CTA Button */}
             <div className="flex items-center gap-2">
-              {/* Primary Header Date Picker Pill */}
-              <button
-                type="button"
-                onClick={() => setShowCalendarPopover(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-slate-200 bg-white text-xs font-extrabold text-slate-900 shadow-2xs hover:bg-slate-50 cursor-pointer active:scale-95 transition-all"
+              <Button
+                className="h-10 px-5 text-xs font-black bg-[#D96653] hover:bg-[#c05543] text-white rounded-full shadow-sm cursor-pointer"
+                onPress={() => setShowSpendModal(true)}
               >
-                <CalendarIcon className="size-3.5 text-[#ff5c38]" />
-                <span>{formatDateFormatted(spendDate)}</span>
-                <ChevronDown className="size-3 text-slate-400" />
-              </button>
-
-              {/* Month Selector Pill */}
-              <button
-                type="button"
-                onClick={() => setShowMonthDropdown(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-slate-200 bg-slate-100 text-xs font-extrabold text-slate-900 hover:bg-slate-200 cursor-pointer"
-              >
-                <span>{formatMonthLabel(selectedMonth)}</span>
-                <ChevronDown className="size-3 text-slate-500" />
-              </button>
-
-              {/* User Avatar Badge */}
-              <div className="hidden sm:flex items-center gap-2 pl-2 border-l border-slate-200">
-                <div className="size-7 rounded-full bg-slate-900 text-white flex items-center justify-center text-[10px] font-black">
-                  SK
-                </div>
-                <div className="text-left leading-tight">
-                  <p className="text-xs font-extrabold text-slate-900">Sai Teja</p>
-                  <p className="text-[10px] text-slate-400">Zenerative Minds</p>
-                </div>
-              </div>
+                <Plus className="mr-1.5 size-4" /> + Log Spend / Pay
+              </Button>
             </div>
+          </div>
+
+          {/* Mobile Horizontal Navigation Strip (< lg) */}
+          <div className="lg:hidden mt-3 pt-2 border-t border-slate-100 flex items-center gap-1 overflow-x-auto no-scrollbar">
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              const isActive = activeTab === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  onClick={() => setActiveTab(item.id)}
+                  className={cn(
+                    "px-3.5 py-1.5 rounded-full text-xs font-black whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0",
+                    isActive
+                      ? "bg-[#D96653] text-white shadow-xs"
+                      : "bg-slate-100 text-slate-600 hover:text-slate-900",
+                  )}
+                >
+                  <Icon className="size-3.5" />
+                  <span>{item.label}</span>
+                </button>
+              );
+            })}
           </div>
         </header>
 
@@ -880,7 +747,7 @@ export function SafeSpendApp() {
             <div className="relative z-10 w-full max-w-sm rounded-3xl border border-slate-200 bg-white p-5 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
                 <span className="text-xs font-extrabold text-slate-900 flex items-center gap-2">
-                  <CalendarIcon className="size-4 text-[#ff5c38]" /> Select Spend Date
+                  <CalendarIcon className="size-4 text-[#D96653]" /> Select Spend Date
                 </span>
                 <button
                   type="button"
@@ -939,8 +806,8 @@ export function SafeSpendApp() {
                       }}
                       className={cn(
                         "h-9 w-full rounded-xl text-xs font-extrabold flex items-center justify-center transition-all min-h-[36px]",
-                        item.isSelected && "bg-[#ff5c38] text-white shadow-xs",
-                        !item.isSelected && item.isToday && "border border-[#ff5c38] text-[#ff5c38] bg-orange-50 font-bold",
+                        item.isSelected && "bg-[#D96653] text-white shadow-xs",
+                        !item.isSelected && item.isToday && "border border-[#D96653] text-[#D96653] bg-orange-50 font-bold",
                         !item.isSelected && !item.isToday && !item.isDisabled && "text-slate-800 hover:bg-slate-100 active:scale-95",
                         item.isDisabled && "text-slate-300 opacity-40 cursor-not-allowed",
                       )}
@@ -979,7 +846,7 @@ export function SafeSpendApp() {
                   }}
                   className={cn(
                     "w-full text-left px-3 py-2 rounded-xl text-xs font-semibold flex items-center justify-between transition-colors",
-                    selectedMonth === m.value ? "bg-slate-900 font-bold text-white" : "text-slate-700 hover:bg-slate-50",
+                    selectedMonth === m.value ? "bg-[#18181b] font-bold text-white" : "text-slate-700 hover:bg-slate-50",
                   )}
                 >
                   <span>{m.label}</span>
@@ -997,7 +864,7 @@ export function SafeSpendApp() {
             <div className="relative z-10 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
               <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
-                  <Plus className="size-4 text-[#ff5c38]" /> {editingEntryId ? "Edit Transaction" : "Quick Add Spend / Debt Payoff"}
+                  <Plus className="size-4 text-[#D96653]" /> {editingEntryId ? "Edit Transaction" : "Quick Add Spend / Debt Payoff"}
                 </h3>
                 <button
                   type="button"
@@ -1021,7 +888,7 @@ export function SafeSpendApp() {
                       type="number"
                       value={amount}
                       onChange={(e) => setAmount(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 text-sm h-11 pl-8 px-3 font-mono font-black text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900 focus:bg-white"
+                      className="w-full bg-slate-50 border border-slate-200 text-sm h-11 pl-8 px-3 font-mono font-black text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653] focus:bg-white"
                     />
                   </div>
                 </div>
@@ -1031,7 +898,7 @@ export function SafeSpendApp() {
                   <select
                     value={categoryId}
                     onChange={(e) => setCategoryId(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 rounded-2xl h-11 px-3.5 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
+                    className="w-full bg-slate-50 border border-slate-200 text-sm font-semibold text-slate-900 rounded-2xl h-11 px-3.5 focus:outline-none focus:ring-2 focus:ring-[#D96653] cursor-pointer"
                   >
                     <optgroup label="Living Expenses">
                       {categoryOptions.map((cat) => (
@@ -1081,12 +948,12 @@ export function SafeSpendApp() {
                     placeholder="e.g. Grocery purchase..."
                     value={note}
                     onChange={(e) => setNote(e.target.value)}
-                    className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-slate-900"
+                    className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
                   />
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
-                  <Button className="h-11 flex-1 text-sm font-extrabold bg-[#18181b] text-white rounded-2xl shadow-xs" type="submit">
+                  <Button className="h-11 flex-1 text-sm font-extrabold bg-[#D96653] text-white rounded-2xl shadow-xs" type="submit">
                     {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
                   </Button>
                   <Button
@@ -1105,8 +972,8 @@ export function SafeSpendApp() {
 
         {/* Dashboard Workspace */}
         <div className="mx-auto max-w-6xl px-4 py-5 sm:px-8 space-y-6">
-          {/* Greeting Banner */}
-          <div className="flex items-center justify-between">
+          {/* Greeting & Quick Action Banner */}
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div>
               <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900">
                 Financial Overview 👋
@@ -1114,16 +981,6 @@ export function SafeSpendApp() {
               <p className="text-xs sm:text-sm font-medium text-slate-400 mt-0.5">
                 Safe spend pace, live bank liquidity, and zero-EMI roadmap for {formatMonthLabel(selectedMonth)}.
               </p>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                className="h-9 px-4 text-xs font-extrabold bg-[#ff5c38] text-white rounded-full shadow-xs hover:bg-orange-600"
-                onPress={() => setShowSpendModal(true)}
-              >
-                <Plus className="mr-1 size-3.5" /> Log Spend
-              </Button>
             </div>
           </div>
 
@@ -1133,7 +990,7 @@ export function SafeSpendApp() {
               {/* Top 4 Finexy Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Featured Coral Card: Total Monthly Income */}
-                <div className="rounded-3xl bg-[#ff5c38] text-white p-5 shadow-sm space-y-3 relative overflow-hidden flex flex-col justify-between">
+                <div className="rounded-3xl bg-[#D96653] text-white p-5 shadow-sm space-y-3 relative overflow-hidden flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
                     <span className="rounded-full bg-white/20 p-1.5 text-white">
@@ -1149,19 +1006,31 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
-                {/* White Card: Outgoing EMIs */}
+                {/* White Card: Outgoing EMIs (WITH INDIVIDUAL SECTION BREAKDOWNS DISPLAYED) */}
                 <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-3 flex flex-col justify-between">
                   <div className="flex justify-between items-start">
-                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Outgoing EMIs</span>
+                    <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Total Outgoing EMIs</span>
                     <span className="rounded-full bg-slate-100 p-1.5 text-slate-700">
                       <CreditCardIcon className="size-3.5" />
                     </span>
                   </div>
                   <div>
                     <p className="text-3xl font-black font-mono tracking-tight text-slate-900">{formatInr(monthOutgoingEmis)}</p>
-                    <p className="text-xs font-medium text-slate-500 mt-1">
-                      {currentPersonalEmis.length} Personal · {currentVenkatPayableEmis.length} Venkat
-                    </p>
+                    {/* INDIVIDUAL SECTION BREAKDOWNS */}
+                    <div className="text-[11px] font-semibold text-slate-500 mt-1.5 space-y-0.5 border-t border-slate-100 pt-1.5">
+                      <div className="flex justify-between">
+                        <span>Personal EMIs:</span>
+                        <span className="font-mono font-bold text-slate-800">{formatInr(monthPersonalEmisTotal)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span>Venkat Payable:</span>
+                        <span className="font-mono font-bold text-slate-800">{formatInr(monthVenkatPayableTotal)}</span>
+                      </div>
+                      <div className="flex justify-between text-slate-400">
+                        <span>On Name Debit:</span>
+                        <span className="font-mono font-bold text-slate-600">{formatInr(monthVenkatDebitOnNameTotal)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
@@ -1220,7 +1089,7 @@ export function SafeSpendApp() {
                           <div className="flex justify-between items-center text-xs">
                             <span className="font-extrabold text-slate-900 flex items-center gap-2">
                               {debt.priority === "high" ? (
-                                <AlertCircle className="size-4 text-[#ff5c38]" />
+                                <AlertCircle className="size-4 text-[#D96653]" />
                               ) : (
                                 <UserCheck className="size-4 text-emerald-600" />
                               )}
@@ -1245,7 +1114,7 @@ export function SafeSpendApp() {
                                 if (debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
                                 setShowSpendModal(true);
                               }}
-                              className="text-[#ff5c38] font-extrabold hover:underline"
+                              className="text-[#D96653] font-extrabold hover:underline"
                             >
                               {debt.isCleared ? "Logged" : "+ Pay & Log"}
                             </button>
@@ -1393,7 +1262,7 @@ export function SafeSpendApp() {
                         </div>
                       </div>
 
-                      <div className="rounded-2xl bg-[#ff5c38] text-white p-4 space-y-3 shadow-md">
+                      <div className="rounded-2xl bg-[#D96653] text-white p-4 space-y-3 shadow-md">
                         <div className="flex justify-between items-center text-xs">
                           <span className="font-extrabold tracking-wider text-orange-100">Axis MyZone</span>
                           <Chip color="success" size="sm" variant="soft">Active</Chip>
@@ -1522,17 +1391,60 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 4: EMIS */}
+          {/* TAB 4: EMIS & DEBT LEDGER (WITH COMPLETE GRAND TOTAL & SECTION BREAKDOWNS DISPLAYED) */}
           {activeTab === "emis" && (
             <div className="space-y-6">
+              {/* GRAND TOTAL SUMMARY CARD FOR EMIS */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
-                <h3 className="text-xl font-extrabold text-slate-900">Personal EMIs ({currentPersonalEmis.length})</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-2xl font-black text-slate-900">EMI Obligations Overview</h3>
+                    <p className="text-xs text-slate-400 font-medium">Full breakdown of outgoing personal EMIs, Venkat shared EMIs, and on-name debits</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs font-extrabold text-slate-400 uppercase">Grand Total Outgoing EMIs</p>
+                    <p className="text-3xl font-black font-mono text-[#D96653]">{formatInr(monthOutgoingEmis)}</p>
+                  </div>
+                </div>
+
+                {/* Section Totals Summary Strip */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100">
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-4">
+                    <p className="text-xs font-extrabold text-slate-500 uppercase">Personal EMIs Total</p>
+                    <p className="text-xl font-mono font-black text-slate-900 mt-1">{formatInr(monthPersonalEmisTotal)}</p>
+                    <p className="text-[11px] font-semibold text-slate-500">{currentPersonalEmis.length} active items</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-4">
+                    <p className="text-xs font-extrabold text-slate-500 uppercase">Venkat Payable Total</p>
+                    <p className="text-xl font-mono font-black text-slate-900 mt-1">{formatInr(monthVenkatPayableTotal)}</p>
+                    <p className="text-[11px] font-semibold text-slate-500">{currentVenkatPayableEmis.length} active items</p>
+                  </div>
+
+                  <div className="rounded-2xl bg-slate-50 border border-slate-200/70 p-4">
+                    <p className="text-xs font-extrabold text-slate-400 uppercase">On-Name Debit (Venkat Pays)</p>
+                    <p className="text-xl font-mono font-black text-slate-700 mt-1">{formatInr(monthVenkatDebitOnNameTotal)}</p>
+                    <p className="text-[11px] font-semibold text-slate-400">{currentVenkatOnYourNameEmis.length} active items</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 1: PERSONAL EMIS */}
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <CreditCardIcon className="size-5 text-[#D96653]" /> Personal EMIs
+                  </h4>
+                  <span className="text-sm font-mono font-black text-[#D96653]">
+                    Section Total: {formatInr(monthPersonalEmisTotal)}
+                  </span>
+                </div>
+                <div className="space-y-2.5">
                   {currentPersonalEmis.map((emi) => (
-                    <div key={emi.id} className="flex justify-between items-center p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                    <div key={emi.id} className="flex justify-between items-center p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60">
                       <div>
                         <p className="font-extrabold text-slate-900 text-sm">{emi.name}</p>
-                        <p className="text-xs text-slate-500">Matures: {emi.ends}</p>
+                        <p className="text-xs text-slate-500">Matures: <span className="font-mono font-semibold">{emi.ends}</span></p>
                       </div>
                       <span className="font-mono text-base font-black text-slate-900">{formatInr(emi.amount)}/mo</span>
                     </div>
@@ -1540,16 +1452,47 @@ export function SafeSpendApp() {
                 </div>
               </div>
 
+              {/* SECTION 2: VENKAT PAYABLE EMIS */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
-                <h3 className="text-xl font-extrabold text-slate-900">Venkat Payable EMIs ({currentVenkatPayableEmis.length})</h3>
-                <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <Users className="size-5 text-[#D96653]" /> Venkat Payable EMIs (EMIs paid to Venkat)
+                  </h4>
+                  <span className="text-sm font-mono font-black text-[#D96653]">
+                    Section Total: {formatInr(monthVenkatPayableTotal)}
+                  </span>
+                </div>
+                <div className="space-y-2.5">
                   {currentVenkatPayableEmis.map((emi) => (
-                    <div key={emi.id} className="flex justify-between items-center p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                    <div key={emi.id} className="flex justify-between items-center p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60">
                       <div>
-                        <p className="font-extrabold text-slate-900 text-sm">{emi.name} (to Venkat)</p>
-                        <p className="text-xs text-slate-500">Matures: {emi.ends}</p>
+                        <p className="font-extrabold text-slate-900 text-sm">{emi.name}</p>
+                        <p className="text-xs text-slate-500">Matures: <span className="font-mono font-semibold">{emi.ends}</span></p>
                       </div>
                       <span className="font-mono text-base font-black text-slate-900">{formatInr(emi.amount)}/mo</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* SECTION 3: VENKAT ON YOUR NAME RECEIVABLE DEBIT */}
+              <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
+                <div className="flex justify-between items-center">
+                  <h4 className="text-lg font-extrabold text-slate-900 flex items-center gap-2">
+                    <Landmark className="size-5 text-slate-500" /> On-Name Debits (Venkat Pays directly)
+                  </h4>
+                  <span className="text-sm font-mono font-black text-slate-700">
+                    Section Total: {formatInr(monthVenkatDebitOnNameTotal)}
+                  </span>
+                </div>
+                <div className="space-y-2.5">
+                  {currentVenkatOnYourNameEmis.map((emi) => (
+                    <div key={emi.id} className="flex justify-between items-center p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60">
+                      <div>
+                        <p className="font-extrabold text-slate-900 text-sm">{emi.name}</p>
+                        <p className="text-xs text-slate-500">Matures: <span className="font-mono font-semibold">{emi.ends}</span></p>
+                      </div>
+                      <span className="font-mono text-base font-black text-slate-700">{formatInr(emi.amount)}/mo</span>
                     </div>
                   ))}
                 </div>
@@ -1580,7 +1523,7 @@ export function SafeSpendApp() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl bg-[#ff5c38] text-white p-6 space-y-4 shadow-lg">
+                <div className="rounded-2xl bg-[#D96653] text-white p-6 space-y-4 shadow-lg">
                   <div className="flex justify-between items-center">
                     <span className="font-extrabold text-orange-100">Axis MyZone Credit Card</span>
                     <Chip color="success" size="sm">Active</Chip>
