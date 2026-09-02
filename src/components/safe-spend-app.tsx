@@ -3,19 +3,28 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  Calendar,
+  Calendar as CalendarIcon,
   Check,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Coffee,
   CreditCard as CreditCardIcon,
+  Dumbbell,
+  Fuel,
+  Home,
   IndianRupee,
   Landmark,
   Pencil,
   PiggyBank,
   Plus,
   RefreshCcw,
+  ShoppingBag,
   Sparkles,
   Trash2,
+  UserCheck,
+  Wallet,
+  Zap,
 } from "lucide-react";
 
 import {
@@ -61,12 +70,12 @@ const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string }> = [
 ];
 
 const categoryOptions = [
-  { id: "groceries", label: "Groceries & Daily Needs", icon: "🛒", budget: "₹3,000/mo" },
-  { id: "bike", label: "Bike Fuel & Maintenance", icon: "⛽", budget: "₹3,000/mo" },
-  { id: "gym", label: "Gym & Fitness", icon: "🏋️", budget: "₹2,500/mo" },
-  { id: "rent", label: "Room Rent", icon: "🏠", budget: "₹6,000/mo" },
-  { id: "electricity", label: "Electricity", icon: "⚡", budget: "₹500/mo" },
-  { id: "misc", label: "Miscellaneous Living", icon: "☕", budget: "₹3,000/mo" },
+  { id: "groceries", label: "Groceries & Daily Needs", icon: ShoppingBag, budget: "₹3,000/mo", color: "text-amber-600 bg-amber-50 border-amber-200" },
+  { id: "bike", label: "Bike Fuel & Maintenance", icon: Fuel, budget: "₹3,000/mo", color: "text-sky-600 bg-sky-50 border-sky-200" },
+  { id: "gym", label: "Gym & Fitness", icon: Dumbbell, budget: "₹2,500/mo", color: "text-purple-600 bg-purple-50 border-purple-200" },
+  { id: "rent", label: "Room Rent", icon: Home, budget: "₹6,000/mo", color: "text-emerald-600 bg-emerald-50 border-emerald-200" },
+  { id: "electricity", label: "Electricity", icon: Zap, budget: "₹500/mo", color: "text-yellow-600 bg-yellow-50 border-yellow-200" },
+  { id: "misc", label: "Miscellaneous Living", icon: Coffee, budget: "₹3,000/mo", color: "text-slate-600 bg-slate-100 border-slate-200" },
 ];
 
 function loadSpendEntries(): SpendEntry[] {
@@ -130,6 +139,20 @@ function getYesterdayDateString() {
   const date = new Date();
   date.setDate(date.getDate() - 1);
   return getLocalDateString(date);
+}
+
+function formatDateFormatted(dateStr: string) {
+  if (!dateStr) return "";
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+  const todayStr = getLocalDateString();
+  const yesterdayStr = getYesterdayDateString();
+
+  if (dateStr === todayStr) return `Today (${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+  if (dateStr === yesterdayStr) return `Yesterday (${d.toLocaleDateString("en-US", { month: "short", day: "numeric" })})`;
+
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
 }
 
 function getSeptemberDay() {
@@ -237,6 +260,11 @@ export function SafeSpendApp() {
   const [spendDate, setSpendDate] = useState<string>(() => getLocalDateString());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
+  // Custom UI Popover / Picker states
+  const [showCalendarPopover, setShowCalendarPopover] = useState(false);
+  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
+  const [showMonthDropdown, setShowMonthDropdown] = useState(false);
+
   // Spend list filter states
   const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday" | "custom">("all");
   const [spendListCustomDate, setSpendListCustomDate] = useState<string>("");
@@ -256,8 +284,8 @@ export function SafeSpendApp() {
   const [newDebtPriority, setNewDebtPriority] = useState<"high" | "normal">("high");
   const [newDebtNote, setNewDebtNote] = useState("");
 
-  // Active tab state
-  const [activeTab, setActiveTab] = useState("plan");
+  // Spend is active by default as requested
+  const [activeTab, setActiveTab] = useState("spend");
 
   useEffect(() => {
     window.localStorage.setItem(SPEND_STORAGE_KEY, JSON.stringify(entries));
@@ -548,6 +576,15 @@ export function SafeSpendApp() {
   const prevMonth = currentMonthIndex > 0 ? allForecastMonths[currentMonthIndex - 1].value : null;
   const nextMonth = currentMonthIndex < allForecastMonths.length - 1 ? allForecastMonths[currentMonthIndex + 1].value : null;
 
+  // Currently selected category object
+  const selectedCategoryObj = useMemo(() => {
+    const livingCat = categoryOptions.find((c) => c.id === categoryId);
+    if (livingCat) return { label: livingCat.label, Icon: livingCat.icon, sub: livingCat.budget, color: livingCat.color };
+    const debtCat = debtPaymentStats.find((d) => d.id === categoryId);
+    if (debtCat) return { label: debtCat.name, Icon: debtCat.priority === "high" ? AlertCircle : UserCheck, sub: debtCat.isCleared ? "Cleared" : formatInr(debtCat.remainingBalance), color: "text-amber-600 bg-amber-50 border-amber-200" };
+    return { label: "Select Category", Icon: Wallet, sub: "", color: "text-slate-700 bg-slate-50 border-slate-200" };
+  }, [categoryId, debtPaymentStats]);
+
   function handleAddIncome(e: FormEvent) {
     e.preventDefault();
     const parsed = Number(newIncomeAmount);
@@ -598,6 +635,7 @@ export function SafeSpendApp() {
     setPaidBy(entry.paidBy);
     setNote(entry.note ?? "");
     setSpendDate(entry.date);
+    setActiveTab("spend");
   }
 
   function cancelEditingEntry() {
@@ -645,7 +683,6 @@ export function SafeSpendApp() {
 
     setAmount("");
     setNote("");
-    setSpendDate(todayStr);
   }
 
   function handleAddDebt(e: FormEvent) {
@@ -693,12 +730,36 @@ export function SafeSpendApp() {
 
   const activeEmiCount = currentPersonalEmis.length + currentVenkatPayableEmis.length;
 
+  // Custom Calendar Grid Generator
+  const calendarDays = useMemo(() => {
+    const [year, month] = spendDate.split("-").map(Number);
+    const dateObj = new Date(year, month - 1, 1);
+    const daysInMonth = new Date(year, month, 0).getDate();
+    const startDayOfWeek = dateObj.getDay(); // 0 = Sun
+
+    const todayStr = getLocalDateString();
+    const list: Array<{ day: number; dateStr: string; isToday: boolean; isSelected: boolean; isDisabled: boolean }> = [];
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const dStr = `${year}-${String(month).padStart(2, "0")}-${String(i).padStart(2, "0")}`;
+      list.push({
+        day: i,
+        dateStr: dStr,
+        isToday: dStr === todayStr,
+        isSelected: dStr === spendDate,
+        isDisabled: dStr > todayStr,
+      });
+    }
+
+    return { daysInMonth, startDayOfWeek, days: list };
+  }, [spendDate]);
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-5xl bg-slate-50 text-slate-900 pb-16 font-sans">
-      {/* Clean Header with HeroUI Component */}
-      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+      {/* Clean Primary Header & Prominent Date Selector */}
+      <header className="sticky top-0 z-30 border-b border-slate-200/90 bg-white/95 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             <div className="rounded-lg bg-slate-900 p-2 text-white shadow-xs">
               <Landmark className="size-4" />
             </div>
@@ -706,48 +767,133 @@ export function SafeSpendApp() {
               <div className="flex items-center gap-2">
                 <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">SafeSpend</span>
                 <Chip color="success" size="sm" variant="soft">
-                  Live
+                  Live Engine
                 </Chip>
               </div>
-              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Financial Guardrail</h1>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Financial Command</h1>
             </div>
           </div>
 
-          {/* Clean Month Selector */}
-          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
-            <Button
-              size="sm"
-              variant="ghost"
-              className="size-7 p-0 text-slate-600 hover:bg-white rounded-md min-w-0"
-              isDisabled={!prevMonth}
-              onPress={() => prevMonth && setSelectedMonth(prevMonth)}
-              aria-label="Previous Month"
-            >
-              <ChevronLeft className="size-4" />
-            </Button>
+          {/* Primary Date Picker Control & Month Selector Bar */}
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Custom Interactive Calendar Picker Button */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowCalendarPopover(!showCalendarPopover)}
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-bold text-slate-900 shadow-2xs hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
+              >
+                <CalendarIcon className="size-4 text-indigo-600" />
+                <span>{formatDateFormatted(spendDate)}</span>
+                <ChevronDown className="size-3.5 text-slate-500" />
+              </button>
 
-            <select
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-white px-2.5 py-1 rounded-md border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
-            >
-              {allForecastMonths.map((m) => (
-                <option key={m.value} value={m.value}>
-                  {m.label} {m.value === "2028-05" ? "• Zero EMI" : ""}
-                </option>
-              ))}
-            </select>
+              {/* Custom Popover Calendar Picker Component (NO HTML PREVIEW) */}
+              {showCalendarPopover && (
+                <div className="absolute right-0 sm:left-0 top-10 z-50 w-72 rounded-xl border border-slate-200 bg-white p-4 shadow-xl space-y-3">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-2">
+                    <span className="text-xs font-extrabold text-slate-900">Select Date for Spends</span>
+                    <button
+                      type="button"
+                      className="text-xs text-slate-400 hover:text-slate-700"
+                      onClick={() => setShowCalendarPopover(false)}
+                    >
+                      Close
+                    </button>
+                  </div>
 
-            <Button
-              size="sm"
-              variant="ghost"
-              className="size-7 p-0 text-slate-600 hover:bg-white rounded-md min-w-0"
-              isDisabled={!nextMonth}
-              onPress={() => nextMonth && setSelectedMonth(nextMonth)}
-              aria-label="Next Month"
-            >
-              <ChevronRight className="size-4" />
-            </Button>
+                  {/* Quick Preset Buttons */}
+                  <div className="flex gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSpendDate(getLocalDateString());
+                        setShowCalendarPopover(false);
+                      }}
+                      className="flex-1 py-1 px-2 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
+                    >
+                      Today
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSpendDate(getYesterdayDateString());
+                        setShowCalendarPopover(false);
+                      }}
+                      className="flex-1 py-1 px-2 rounded-md text-[11px] font-bold bg-slate-100 text-slate-800 hover:bg-slate-200 text-center"
+                    >
+                      Yesterday
+                    </button>
+                  </div>
+
+                  {/* Custom Calendar Grid */}
+                  <div className="space-y-1">
+                    <div className="grid grid-cols-7 text-center text-[10px] font-bold text-slate-400 pb-1">
+                      <span>Su</span><span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span>
+                    </div>
+                    <div className="grid grid-cols-7 gap-1 text-center text-xs">
+                      {Array.from({ length: calendarDays.startDayOfWeek }).map((_, idx) => (
+                        <div key={`empty-${idx}`} />
+                      ))}
+                      {calendarDays.days.map((item) => (
+                        <button
+                          key={item.dateStr}
+                          type="button"
+                          disabled={item.isDisabled}
+                          onClick={() => {
+                            setSpendDate(item.dateStr);
+                            setShowCalendarPopover(false);
+                          }}
+                          className={cn(
+                            "size-7 rounded-lg text-xs font-semibold flex items-center justify-center transition-colors",
+                            item.isSelected && "bg-slate-900 text-white font-extrabold shadow-2xs",
+                            !item.isSelected && item.isToday && "border border-indigo-500 text-indigo-700 font-bold bg-indigo-50",
+                            !item.isSelected && !item.isToday && !item.isDisabled && "text-slate-800 hover:bg-slate-100",
+                            item.isDisabled && "text-slate-300 opacity-40 cursor-not-allowed",
+                          )}
+                        >
+                          {item.day}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Custom Month Selector Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setShowMonthDropdown(!showMonthDropdown)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-100 text-xs font-semibold text-slate-900 hover:bg-slate-200 cursor-pointer"
+              >
+                <span>{formatMonthLabel(selectedMonth)}</span>
+                <ChevronDown className="size-3.5 text-slate-500" />
+              </button>
+
+              {showMonthDropdown && (
+                <div className="absolute right-0 top-10 z-50 w-52 max-h-60 overflow-y-auto rounded-xl border border-slate-200 bg-white p-1 shadow-xl space-y-0.5">
+                  {allForecastMonths.map((m) => (
+                    <button
+                      key={m.value}
+                      type="button"
+                      onClick={() => {
+                        setSelectedMonth(m.value);
+                        setShowMonthDropdown(false);
+                      }}
+                      className={cn(
+                        "w-full text-left px-3 py-1.5 rounded-md text-xs font-medium flex items-center justify-between transition-colors",
+                        selectedMonth === m.value ? "bg-slate-100 font-bold text-slate-900" : "text-slate-700 hover:bg-slate-50",
+                      )}
+                    >
+                      <span>{m.label}</span>
+                      {m.value === "2028-05" && <Chip color="accent" size="sm" variant="soft">Zero EMI</Chip>}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
@@ -812,9 +958,19 @@ export function SafeSpendApp() {
           />
         </div>
 
-        {/* Segmented Navigation Tabs */}
+        {/* Segmented Navigation Tabs — SPEND IS FIRST & PRIMARY */}
         <div className="w-full">
           <div className="grid grid-cols-3 sm:grid-cols-6 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1">
+            <button
+              type="button"
+              onClick={() => setActiveTab("spend")}
+              className={cn(
+                "text-xs font-semibold rounded-md py-1.5 transition-colors",
+                activeTab === "spend" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
+              )}
+            >
+              Spend
+            </button>
             <button
               type="button"
               onClick={() => setActiveTab("plan")}
@@ -834,16 +990,6 @@ export function SafeSpendApp() {
               )}
             >
               Invest
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("spend")}
-              className={cn(
-                "text-xs font-semibold rounded-md py-1.5 transition-colors",
-                activeTab === "spend" ? "bg-white text-slate-900 shadow-2xs font-bold" : "text-slate-600 hover:text-slate-900",
-              )}
-            >
-              Spend
             </button>
             <button
               type="button"
@@ -877,7 +1023,362 @@ export function SafeSpendApp() {
             </button>
           </div>
 
-          {/* TAB 1: MONTH PLAN & CASHFLOW */}
+          {/* TAB 1: SPEND TRACKER & QUICK LOG (ACTIVE FIRST) */}
+          {activeTab === "spend" && (
+            <div className="mt-4 space-y-4">
+              {/* Quick Add Spend Form Card */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
+                <div>
+                  <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
+                    {editingEntryId ? (
+                      <>
+                        <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
+                      </>
+                    )}
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs for selected date."}
+                  </p>
+                </div>
+
+                <form className="space-y-4" onSubmit={addSpend}>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {/* Amount Input */}
+                    <div className="space-y-1.5">
+                      <label htmlFor="amount" className="text-xs font-semibold text-slate-700 block">Amount (₹)</label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400 font-mono">₹</span>
+                        <input
+                          id="amount"
+                          inputMode="numeric"
+                          min="1"
+                          placeholder="e.g. 3500"
+                          type="number"
+                          value={amount}
+                          onChange={(event) => setAmount(event.target.value)}
+                          className="w-full bg-white border border-slate-200 text-sm h-10 pl-7 px-3 font-mono font-bold text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Date Badge Banner */}
+                    <div className="space-y-1.5">
+                      <label className="text-xs font-semibold text-slate-700 block">Selected Date for Entry</label>
+                      <div className="flex items-center justify-between h-10 px-3 rounded-lg border border-slate-200 bg-slate-50 text-xs font-bold text-slate-800">
+                        <span className="flex items-center gap-1.5">
+                          <CalendarIcon className="size-4 text-indigo-600" />
+                          <span>{formatDateFormatted(spendDate)}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setShowCalendarPopover(true)}
+                          className="text-[11px] font-bold text-indigo-600 hover:underline"
+                        >
+                          Change
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Custom Category Dropdown Component (Using Lucide Icons, NO EMOJIS) */}
+                  <div className="space-y-1.5 relative">
+                    <label className="text-xs font-semibold text-slate-700 block">Expense Category</label>
+                    <button
+                      type="button"
+                      onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+                      className="w-full flex items-center justify-between bg-white border border-slate-200 text-sm font-medium text-slate-900 rounded-lg h-11 px-3 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer shadow-2xs hover:bg-slate-50/80"
+                    >
+                      <span className="flex items-center gap-2 truncate">
+                        <selectedCategoryObj.Icon className="size-4 shrink-0 text-slate-700" />
+                        <span className="font-semibold">{selectedCategoryObj.label}</span>
+                        {selectedCategoryObj.sub && (
+                          <span className="text-xs text-slate-500 font-normal">({selectedCategoryObj.sub})</span>
+                        )}
+                      </span>
+                      <ChevronDown className="size-4 text-slate-400 shrink-0" />
+                    </button>
+
+                    {/* Custom Popover Dropdown for Categories */}
+                    {showCategoryDropdown && (
+                      <div className="absolute left-0 top-16 z-50 w-full max-h-72 overflow-y-auto rounded-xl border border-slate-200 bg-white p-2 shadow-xl space-y-1">
+                        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1">Living Expenses</p>
+                        {categoryOptions.map((cat) => {
+                          const IconComponent = cat.icon;
+                          const isSel = categoryId === cat.id;
+                          return (
+                            <button
+                              key={cat.id}
+                              type="button"
+                              onClick={() => {
+                                setCategoryId(cat.id);
+                                setShowCategoryDropdown(false);
+                              }}
+                              className={cn(
+                                "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
+                                isSel ? "bg-slate-900 text-white font-bold" : "text-slate-800 hover:bg-slate-100",
+                              )}
+                            >
+                              <span className="flex items-center gap-2">
+                                <IconComponent className={cn("size-4", isSel ? "text-white" : "text-slate-600")} />
+                                <span>{cat.label}</span>
+                              </span>
+                              <span className={cn("text-[11px]", isSel ? "text-slate-300" : "text-slate-500")}>
+                                {cat.budget}
+                              </span>
+                            </button>
+                          );
+                        })}
+
+                        {debtPaymentStats.length > 0 && (
+                          <>
+                            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2 py-1 pt-2">Debt & Loan Payoffs</p>
+                            {debtPaymentStats.map((debt) => {
+                              const isSel = categoryId === debt.id;
+                              const DebtIcon = debt.priority === "high" ? AlertCircle : UserCheck;
+                              return (
+                                <button
+                                  key={debt.id}
+                                  type="button"
+                                  onClick={() => {
+                                    setCategoryId(debt.id);
+                                    if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
+                                    setShowCategoryDropdown(false);
+                                  }}
+                                  className={cn(
+                                    "w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors",
+                                    isSel ? "bg-amber-600 text-white font-bold" : "text-slate-800 hover:bg-slate-100",
+                                  )}
+                                >
+                                  <span className="flex items-center gap-2">
+                                    <DebtIcon className={cn("size-4", isSel ? "text-white" : "text-amber-600")} />
+                                    <span>{debt.name}</span>
+                                  </span>
+                                  <span className={cn("text-[11px]", isSel ? "text-amber-100" : "text-slate-500")}>
+                                    {debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)}
+                                  </span>
+                                </button>
+                              );
+                            })}
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Payment Method Selector */}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-semibold text-slate-700 block">Payment Method</label>
+                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                      {paymentMethods.map((method) => {
+                        const isSelected = paidBy === method.id;
+                        return (
+                          <button
+                            key={method.id}
+                            type="button"
+                            onClick={() => setPaidBy(method.id)}
+                            className={cn(
+                              "flex-1 min-w-[70px] py-1.5 px-3 text-xs font-medium rounded-md transition-colors text-center",
+                              isSelected
+                                ? "bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/80"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50",
+                            )}
+                          >
+                            {method.label}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label htmlFor="note" className="text-xs font-semibold text-slate-700 block">Note / Remarks (Optional)</label>
+                    <input
+                      id="note"
+                      placeholder="e.g. Grocery store purchase..."
+                      value={note}
+                      onChange={(event) => setNote(event.target.value)}
+                      className="w-full bg-white border border-slate-200 text-xs h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
+                    />
+                  </div>
+
+                  {paidBy !== "upi" && paidBy !== "cash" && (
+                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <AlertCircle className="size-4 text-amber-800" />
+                        <p className="text-xs font-bold text-amber-900">Card Warning</p>
+                      </div>
+                      <p className="text-xs text-amber-800 font-medium">
+                        Card usage should remain ₹0 until utilization drops below 30%.
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-2 pt-1">
+                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 text-white rounded-lg shadow-xs" type="submit">
+                      {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
+                    </Button>
+                    {editingEntryId && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="h-10 border-slate-200 text-slate-700 rounded-lg"
+                        onPress={cancelEditingEntry}
+                      >
+                        Cancel
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </Card>
+
+              {/* Budget Pace Meter */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
+                <div>
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-base font-bold text-slate-900">Budget Pace</h3>
+                    <StatusBadge status={pace.status} />
+                  </div>
+                  <p className="text-xs text-slate-500 font-medium mt-0.5">{pace.message}</p>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
+                      <span>Monthly Variable Spend</span>
+                      <span className="font-mono">
+                        {formatInr(variableSpent)} / {formatInr(variableBudget)}
+                      </span>
+                    </div>
+                    <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Day</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Allowed Today</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                    </div>
+                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                      <p className="text-slate-500 font-medium">Projected End</p>
+                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                    </div>
+                  </div>
+                </div>
+              </Card>
+
+              {/* Spend History */}
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-base font-bold text-slate-900">Spend History</h3>
+                    <p className="text-xs text-slate-500 font-medium">
+                      {filteredEntries.length
+                        ? `Showing ${filteredEntries.length} of ${entries.length} entries`
+                        : "No spends logged."}
+                    </p>
+                  </div>
+
+                  {/* Date Filter Buttons */}
+                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={spendListFilter === "all" ? "primary" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("all")}
+                    >
+                      All
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={spendListFilter === "today" ? "primary" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("today")}
+                    >
+                      Today
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant={spendListFilter === "yesterday" ? "primary" : "ghost"}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
+                      onPress={() => setSpendListFilter("yesterday")}
+                    >
+                      Yesterday
+                    </Button>
+                  </div>
+                </div>
+
+                {filteredEntries.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
+                    No spend entries found for the selected filter.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {filteredEntries.slice(0, 15).map((entry) => {
+                      const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
+                      const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
+                      const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
+                      const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
+                      const categoryLabel = debtCategory?.name ? `Debt: ${debtCategory.name}` : category?.name;
+                      const isEditingThis = editingEntryId === entry.id;
+
+                      return (
+                        <div
+                          key={entry.id}
+                          className={cn(
+                            "flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors bg-white",
+                            isEditingThis ? "border-amber-300 bg-amber-50" : "border-slate-200 hover:bg-slate-50/80",
+                          )}
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                            <p className="text-xs text-slate-500 font-medium">
+                              {categoryLabel} · {method} · <span className="font-mono text-slate-700">{entry.date}</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <p className="font-mono text-sm font-bold text-slate-900 mr-1">{formatInr(entry.amount)}</p>
+                            <Button
+                              aria-label="Edit spend entry"
+                              size="sm"
+                              variant="ghost"
+                              className="size-7 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md min-w-0"
+                              onPress={() => startEditingEntry(entry)}
+                            >
+                              <Pencil className="size-3.5" />
+                            </Button>
+                            <Button
+                              aria-label="Delete spend entry"
+                              size="sm"
+                              variant="ghost"
+                              className="size-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md min-w-0"
+                              onPress={() => {
+                                if (editingEntryId === entry.id) cancelEditingEntry();
+                                setEntries((current) => current.filter((item) => item.id !== entry.id));
+                              }}
+                            >
+                              <Trash2 className="size-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </Card>
+            </div>
+          )}
+
+          {/* TAB 2: PLAN & CASHFLOW */}
           {activeTab === "plan" && (
             <div className="mt-4 space-y-4">
               {/* Live Bank Liquidity Manager */}
@@ -1050,7 +1551,7 @@ export function SafeSpendApp() {
             </div>
           )}
 
-          {/* TAB 2: WEALTH INVESTMENT ENGINE */}
+          {/* TAB 3: WEALTH INVESTMENT ENGINE */}
           {activeTab === "invest" && (
             <div className="mt-4 space-y-4">
               <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden p-0">
@@ -1097,328 +1598,6 @@ export function SafeSpendApp() {
                     </div>
                   </div>
                 </div>
-              </Card>
-            </div>
-          )}
-
-          {/* TAB 3: SPEND TRACKER & PARTIAL PAYMENT ENGINE */}
-          {activeTab === "spend" && (
-            <div className="mt-4 space-y-4">
-              {/* Form Card */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
-                <div>
-                  <h3 className="flex items-center gap-2 text-base font-bold text-slate-900">
-                    {editingEntryId ? (
-                      <>
-                        <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
-                      </>
-                    )}
-                  </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs."}
-                  </p>
-                </div>
-
-                <form className="space-y-4" onSubmit={addSpend}>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div className="space-y-1.5">
-                      <label htmlFor="spendDate" className="text-xs font-semibold text-slate-700 block">Date</label>
-                      <input
-                        id="spendDate"
-                        type="date"
-                        max={getLocalDateString()}
-                        value={spendDate}
-                        onChange={(event) => {
-                          const val = event.target.value;
-                          const today = getLocalDateString();
-                          setSpendDate(val > today ? today : val);
-                        }}
-                        className="w-full bg-white border border-slate-200 text-sm h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <label htmlFor="amount" className="text-xs font-semibold text-slate-700 block">Amount (₹)</label>
-                      <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400 font-mono">₹</span>
-                        <input
-                          id="amount"
-                          inputMode="numeric"
-                          min="1"
-                          placeholder="e.g. 3500"
-                          type="number"
-                          value={amount}
-                          onChange={(event) => setAmount(event.target.value)}
-                          className="w-full bg-white border border-slate-200 text-sm h-10 pl-7 px-3 font-mono font-bold text-slate-900 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Clean Category Select */}
-                  <div className="space-y-1.5">
-                    <label htmlFor="categorySelect" className="text-xs font-semibold text-slate-700 block">Expense Category</label>
-                    <select
-                      id="categorySelect"
-                      value={categoryId}
-                      onChange={(e) => setCategoryId(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-sm font-medium text-slate-900 rounded-lg h-10 px-3 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
-                    >
-                      <optgroup label="Living Expenses">
-                        {categoryOptions.map((cat) => (
-                          <option key={cat.id} value={cat.id}>
-                            {cat.icon} {cat.label} ({cat.budget})
-                          </option>
-                        ))}
-                      </optgroup>
-                      {debtPaymentStats.length > 0 && (
-                        <optgroup label="Debt & EMI Payoffs">
-                          {debtPaymentStats.map((debt) => (
-                            <option key={debt.id} value={debt.id}>
-                              {debt.priority === "high" ? "🚨" : "🤝"} {debt.name} ({debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)})
-                            </option>
-                          ))}
-                        </optgroup>
-                      )}
-                    </select>
-                  </div>
-
-                  {/* Payment Method Selector */}
-                  <div className="space-y-1.5">
-                    <label className="text-xs font-semibold text-slate-700 block">Payment Method</label>
-                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                      {paymentMethods.map((method) => {
-                        const isSelected = paidBy === method.id;
-                        return (
-                          <button
-                            key={method.id}
-                            type="button"
-                            onClick={() => setPaidBy(method.id)}
-                            className={cn(
-                              "flex-1 min-w-[70px] py-1.5 px-3 text-xs font-medium rounded-md transition-colors text-center",
-                              isSelected
-                                ? "bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/80"
-                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50",
-                            )}
-                          >
-                            {method.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <label htmlFor="note" className="text-xs font-semibold text-slate-700 block">Note / Remarks (Optional)</label>
-                    <input
-                      id="note"
-                      placeholder="e.g. Grocery store purchase..."
-                      value={note}
-                      onChange={(event) => setNote(event.target.value)}
-                      className="w-full bg-white border border-slate-200 text-xs h-10 px-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-slate-900"
-                    />
-                  </div>
-
-                  {paidBy !== "upi" && paidBy !== "cash" && (
-                    <div className="border border-amber-200 bg-amber-50 rounded-lg p-3 space-y-1">
-                      <div className="flex items-center gap-2">
-                        <AlertCircle className="size-4 text-amber-800" />
-                        <p className="text-xs font-bold text-amber-900">Card Warning</p>
-                      </div>
-                      <p className="text-xs text-amber-800 font-medium">
-                        Card usage should remain ₹0 until utilization drops below 30%.
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-1">
-                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 text-white rounded-lg shadow-xs" type="submit">
-                      {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
-                    </Button>
-                    {editingEntryId && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className="h-10 border-slate-200 text-slate-700 rounded-lg"
-                        onPress={cancelEditingEntry}
-                      >
-                        Cancel
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </Card>
-
-              {/* Budget Pace Meter */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-4">
-                <div>
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-base font-bold text-slate-900">Budget Pace</h3>
-                    <StatusBadge status={pace.status} />
-                  </div>
-                  <p className="text-xs text-slate-500 font-medium mt-0.5">{pace.message}</p>
-                </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
-                      <span>Monthly Variable Spend</span>
-                      <span className="font-mono">
-                        {formatInr(variableSpent)} / {formatInr(variableBudget)}
-                      </span>
-                    </div>
-                    <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Day</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Allowed Today</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
-                    </div>
-                    <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
-                      <p className="text-slate-500 font-medium">Projected End</p>
-                      <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
-                    </div>
-                  </div>
-                </div>
-              </Card>
-
-              {/* Spend History */}
-              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl p-4 sm:p-5 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900">Spend History</h3>
-                    <p className="text-xs text-slate-500 font-medium">
-                      {filteredEntries.length
-                        ? `Showing ${filteredEntries.length} of ${entries.length} entries`
-                        : "No spends logged."}
-                    </p>
-                  </div>
-
-                  {/* Date Filter Buttons */}
-                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "all" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("all")}
-                    >
-                      All
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "today" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("today")}
-                    >
-                      Today
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "yesterday" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => setSpendListFilter("yesterday")}
-                    >
-                      Yesterday
-                    </Button>
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant={spendListFilter === "custom" ? "primary" : "ghost"}
-                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md min-w-0", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
-                      onPress={() => {
-                        setSpendListFilter("custom");
-                        if (!spendListCustomDate) setSpendListCustomDate(getLocalDateString());
-                      }}
-                    >
-                      Pick Date
-                    </Button>
-                  </div>
-                </div>
-
-                {spendListFilter === "custom" && (
-                  <div className="pt-2">
-                    <input
-                      type="date"
-                      max={getLocalDateString()}
-                      value={spendListCustomDate}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        const today = getLocalDateString();
-                        setSpendListCustomDate(val > today ? today : val);
-                      }}
-                      className="h-8 text-xs bg-white border border-slate-200 max-w-[180px] rounded-md px-2"
-                    />
-                  </div>
-                )}
-
-                {filteredEntries.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
-                    No spend entries found for the selected filter.
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    {filteredEntries.slice(0, 15).map((entry) => {
-                      const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
-                      const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
-                      const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
-                      const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
-                      const categoryLabel = debtCategory?.name ? `Debt: ${debtCategory.name}` : category?.name;
-                      const isEditingThis = editingEntryId === entry.id;
-
-                      return (
-                        <div
-                          key={entry.id}
-                          className={cn(
-                            "flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors bg-white",
-                            isEditingThis ? "border-amber-300 bg-amber-50" : "border-slate-200 hover:bg-slate-50/80",
-                          )}
-                        >
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
-                            <p className="text-xs text-slate-500 font-medium">
-                              {categoryLabel} · {method} · <span className="font-mono text-slate-700">{entry.date}</span>
-                            </p>
-                          </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            <p className="font-mono text-sm font-bold text-slate-900 mr-1">{formatInr(entry.amount)}</p>
-                            <Button
-                              aria-label="Edit spend entry"
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md min-w-0"
-                              onPress={() => startEditingEntry(entry)}
-                            >
-                              <Pencil className="size-3.5" />
-                            </Button>
-                            <Button
-                              aria-label="Delete spend entry"
-                              size="sm"
-                              variant="ghost"
-                              className="size-7 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md min-w-0"
-                              onPress={() => {
-                                if (editingEntryId === entry.id) cancelEditingEntry();
-                                setEntries((current) => current.filter((item) => item.id !== entry.id));
-                              }}
-                            >
-                              <Trash2 className="size-3.5" />
-                            </Button>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
               </Card>
             </div>
           )}
