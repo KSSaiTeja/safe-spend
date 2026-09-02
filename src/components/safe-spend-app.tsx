@@ -3,31 +3,20 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
-  ArrowDownToLine,
   ArrowRight,
-  Bike,
-  CalendarDays,
-  CheckCircle2,
+  Calendar,
+  Check,
   ChevronLeft,
   ChevronRight,
-  Coins,
   CreditCard as CreditCardIcon,
   IndianRupee,
   Landmark,
+  Pencil,
   PiggyBank,
   Plus,
-  Pencil,
-  Receipt,
   RefreshCcw,
-  ShieldAlert,
   Sparkles,
   Trash2,
-  TrendingDown,
-  TrendingUp,
-  WalletCards,
-  Calendar,
-  Check,
-  Zap,
 } from "lucide-react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -43,7 +32,6 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
@@ -71,21 +59,21 @@ const BUFFER_SWEEP_KEY = "safe-spend-buffer-sweeps-v1";
 const MONTHLY_CARD_BILL_KEY = "safe-spend-monthly-card-bills-v1";
 const CUSTOM_DEBT_KEY = "safe-spend-custom-debts-v1";
 
-const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string; icon: string }> = [
-  { id: "upi", label: "UPI", icon: "⚡" },
-  { id: "cash", label: "Cash", icon: "💵" },
-  { id: "hdfc", label: "HDFC Card", icon: "💳" },
-  { id: "axis", label: "Axis Card", icon: "💳" },
-  { id: "yes-bank", label: "YES Bank Card", icon: "💳" },
+const paymentMethods: Array<{ id: SpendEntry["paidBy"]; label: string }> = [
+  { id: "upi", label: "UPI" },
+  { id: "cash", label: "Cash" },
+  { id: "hdfc", label: "HDFC Card" },
+  { id: "axis", label: "Axis Card" },
+  { id: "yes-bank", label: "YES Bank Card" },
 ];
 
 const categoryOptions = [
-  { id: "groceries", label: "Groceries & Daily Needs", icon: "🛒", budget: "₹3,000/mo", color: "from-amber-50 to-orange-50 border-amber-200" },
-  { id: "bike", label: "Bike Fuel & Maintenance", icon: "⛽", budget: "₹3,000/mo", color: "from-blue-50 to-cyan-50 border-blue-200" },
-  { id: "gym", label: "Gym & Fitness", icon: "🏋️", budget: "₹2,500/mo", color: "from-purple-50 to-pink-50 border-purple-200" },
-  { id: "rent", label: "Room Rent", icon: "🏠", budget: "₹6,000/mo", color: "from-emerald-50 to-teal-50 border-emerald-200" },
-  { id: "electricity", label: "Electricity", icon: "⚡", budget: "₹500/mo", color: "from-yellow-50 to-amber-50 border-yellow-200" },
-  { id: "misc", label: "Miscellaneous Living", icon: "☕", budget: "₹3,000/mo", color: "from-slate-50 to-indigo-50 border-slate-200" },
+  { id: "groceries", label: "Groceries & Daily Needs", icon: "🛒", budget: "₹3,000/mo" },
+  { id: "bike", label: "Bike Fuel & Maintenance", icon: "⛽", budget: "₹3,000/mo" },
+  { id: "gym", label: "Gym & Fitness", icon: "🏋️", budget: "₹2,500/mo" },
+  { id: "rent", label: "Room Rent", icon: "🏠", budget: "₹6,000/mo" },
+  { id: "electricity", label: "Electricity", icon: "⚡", budget: "₹500/mo" },
+  { id: "misc", label: "Miscellaneous Living", icon: "☕", budget: "₹3,000/mo" },
 ];
 
 function loadSpendEntries(): SpendEntry[] {
@@ -161,47 +149,45 @@ function getSeptemberDay() {
 
 function StatusBadge({ status }: { status: "green" | "yellow" | "red" }) {
   const copy = {
-    green: "Safe Zone",
-    yellow: "Careful Pace",
-    red: "Pause Non-Essential",
+    green: "Safe Pace",
+    yellow: "Careful",
+    red: "Over Pace",
   }[status];
 
   return (
-    <Badge
+    <span
       className={cn(
-        "border px-3 py-1 text-xs font-black rounded-lg shadow-xs transition-all",
-        status === "green" && "border-emerald-300 bg-emerald-100 text-emerald-900 shadow-emerald-100",
-        status === "yellow" && "border-amber-300 bg-amber-100 text-amber-950 shadow-amber-100",
-        status === "red" && "border-rose-300 bg-rose-100 text-rose-900 shadow-rose-100",
+        "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-medium border",
+        status === "green" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+        status === "yellow" && "border-amber-200 bg-amber-50 text-amber-800",
+        status === "red" && "border-red-200 bg-red-50 text-red-700",
       )}
-      variant="outline"
     >
       {copy}
-    </Badge>
+    </span>
   );
 }
 
 function ForecastBadge({ status }: { status: "tight" | "stable" | "free" | "emi-zero" }) {
   const copy = {
     tight: "Tight Budget",
-    stable: "Stable Cashflow",
+    stable: "Stable",
     free: "Freeing Up",
-    "emi-zero": "Zero EMI Freedom 🎉",
+    "emi-zero": "Zero EMI",
   }[status];
 
   return (
-    <Badge
+    <span
       className={cn(
-        "border px-3 py-1 text-xs font-black rounded-lg shadow-xs transition-all",
-        status === "tight" && "border-amber-300 bg-amber-100 text-amber-950",
-        status === "stable" && "border-sky-300 bg-sky-100 text-sky-950",
-        status === "free" && "border-emerald-300 bg-emerald-100 text-emerald-950",
-        status === "emi-zero" && "border-violet-300 bg-gradient-to-r from-violet-100 to-indigo-100 text-violet-950 shadow-violet-100 font-extrabold",
+        "inline-flex items-center rounded-md px-2.5 py-0.5 text-xs font-semibold border",
+        status === "tight" && "border-amber-200 bg-amber-50 text-amber-800",
+        status === "stable" && "border-slate-200 bg-slate-100 text-slate-700",
+        status === "free" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+        status === "emi-zero" && "border-emerald-300 bg-emerald-100 text-emerald-800 font-bold",
       )}
-      variant="outline"
     >
       {copy}
-    </Badge>
+    </span>
   );
 }
 
@@ -219,29 +205,22 @@ function MetricCard({
   tone?: "default" | "safe" | "warn" | "danger" | "info";
 }) {
   return (
-    <Card className={cn(
-      "overflow-hidden border transition-all duration-300 shadow-sm hover:shadow-md hover:-translate-y-0.5 rounded-2xl bg-white",
-      tone === "default" && "border-slate-200/90",
-      tone === "safe" && "border-emerald-200 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30",
-      tone === "warn" && "border-amber-200 bg-gradient-to-br from-amber-50/60 via-white to-orange-50/30",
-      tone === "danger" && "border-rose-200 bg-gradient-to-br from-rose-50/60 via-white to-pink-50/30",
-      tone === "info" && "border-sky-200 bg-gradient-to-br from-sky-50/60 via-white to-blue-50/30",
-    )}>
+    <Card className="border-slate-200 bg-white shadow-xs rounded-xl overflow-hidden">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">{title}</p>
-            <p className="mt-1 text-2xl sm:text-3xl font-black tracking-tight text-slate-900">{value}</p>
-            <p className="mt-1.5 text-xs font-semibold text-slate-600 leading-relaxed">{detail}</p>
+            <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">{title}</p>
+            <p className="mt-1 text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 font-mono">{value}</p>
+            <p className="mt-1 text-xs text-slate-600 font-medium">{detail}</p>
           </div>
           <div
             className={cn(
-              "rounded-xl border p-2.5 shadow-sm shrink-0",
-              tone === "default" && "border-slate-200 bg-slate-100 text-slate-700",
-              tone === "safe" && "border-emerald-300 bg-gradient-to-tr from-emerald-500 to-teal-600 text-white shadow-emerald-500/20",
-              tone === "warn" && "border-amber-300 bg-gradient-to-tr from-amber-500 to-orange-500 text-white shadow-amber-500/20",
-              tone === "danger" && "border-rose-300 bg-gradient-to-tr from-rose-500 to-red-600 text-white shadow-rose-500/20",
-              tone === "info" && "border-sky-300 bg-gradient-to-tr from-sky-500 to-blue-600 text-white shadow-sky-500/20",
+              "rounded-lg border p-2.5 shrink-0",
+              tone === "default" && "border-slate-200 bg-slate-50 text-slate-700",
+              tone === "safe" && "border-emerald-200 bg-emerald-50 text-emerald-700",
+              tone === "warn" && "border-amber-200 bg-amber-50 text-amber-800",
+              tone === "danger" && "border-red-200 bg-red-50 text-red-700",
+              tone === "info" && "border-slate-200 bg-slate-100 text-slate-700",
             )}
           >
             <Icon className="size-5" />
@@ -726,31 +705,31 @@ export function SafeSpendApp() {
   const activeEmiCount = currentPersonalEmis.length + currentVenkatPayableEmis.length;
 
   return (
-    <main className="mx-auto min-h-screen w-full max-w-5xl bg-gradient-to-br from-slate-50 via-indigo-50/30 to-violet-50/40 text-slate-900 pb-20 font-sans">
-      {/* Vibrant Light Header & Month Pill Stepper */}
-      <header className="sticky top-0 z-30 border-b border-indigo-100/80 bg-white/90 px-4 py-3.5 backdrop-blur-md shadow-xs sm:px-6">
+    <main className="mx-auto min-h-screen w-full max-w-5xl bg-slate-50 text-slate-900 pb-16 font-sans">
+      {/* Clean Fintech Header */}
+      <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/95 px-4 py-3 backdrop-blur-sm sm:px-6">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-gradient-to-tr from-violet-600 to-indigo-600 p-2.5 text-white shadow-md shadow-indigo-500/25">
-              <Landmark className="size-5" />
+          <div className="flex items-center gap-2.5">
+            <div className="rounded-lg bg-slate-900 p-2 text-white shadow-xs">
+              <Landmark className="size-4" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-xs font-black uppercase tracking-wider text-indigo-600">SafeSpend Pro</span>
-                <Badge variant="outline" className="border-emerald-300 bg-emerald-100 text-emerald-900 text-[10px] font-bold">
-                  Active Engine
-                </Badge>
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">SafeSpend</span>
+                <span className="rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.2 text-[10px] font-semibold text-emerald-700">
+                  Live
+                </span>
               </div>
-              <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">Financial Command Center</h1>
+              <h1 className="text-lg font-bold tracking-tight text-slate-900 sm:text-xl">Financial Guardrail</h1>
             </div>
           </div>
 
-          {/* Interactive Month Picker Pill */}
-          <div className="flex items-center gap-2 bg-slate-100/90 p-1.5 rounded-2xl border border-slate-200 shadow-2xs">
+          {/* Clean Month Selector */}
+          <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-lg border border-slate-200">
             <Button
               size="icon"
               variant="ghost"
-              className="size-8 text-slate-700 hover:bg-white hover:shadow-xs rounded-xl"
+              className="size-7 text-slate-600 hover:bg-white rounded-md"
               disabled={!prevMonth}
               onClick={() => prevMonth && setSelectedMonth(prevMonth)}
               title="Previous Month"
@@ -758,15 +737,14 @@ export function SafeSpendApp() {
               <ChevronLeft className="size-4" />
             </Button>
 
-            {/* Quick Month Dropdown / Selector Pill */}
             <select
               value={selectedMonth}
               onChange={(e) => setSelectedMonth(e.target.value)}
-              className="bg-white px-3 py-1.5 rounded-xl border border-indigo-200 text-xs sm:text-sm font-extrabold text-indigo-950 shadow-2xs focus:outline-none focus:ring-2 focus:ring-indigo-500 cursor-pointer"
+              className="bg-white px-2.5 py-1 rounded-md border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
             >
               {allForecastMonths.map((m) => (
                 <option key={m.value} value={m.value}>
-                  {m.label} {m.value === "2028-05" ? "🎉 Zero EMI" : ""}
+                  {m.label} {m.value === "2028-05" ? "• Zero EMI" : ""}
                 </option>
               ))}
             </select>
@@ -774,7 +752,7 @@ export function SafeSpendApp() {
             <Button
               size="icon"
               variant="ghost"
-              className="size-8 text-slate-700 hover:bg-white hover:shadow-xs rounded-xl"
+              className="size-7 text-slate-600 hover:bg-white rounded-md"
               disabled={!nextMonth}
               onClick={() => nextMonth && setSelectedMonth(nextMonth)}
               title="Next Month"
@@ -786,38 +764,35 @@ export function SafeSpendApp() {
       </header>
 
       {/* Main Container */}
-      <section className="space-y-5 px-4 py-6 sm:px-6">
-        {/* Month Highlight Banner */}
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-gradient-to-r from-white via-indigo-50/20 to-white p-4 sm:p-5 shadow-sm">
-          <div className="space-y-1">
+      <section className="space-y-4 px-4 py-4 sm:px-6">
+        {/* Month Summary Bar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-2xs">
+          <div className="space-y-0.5">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-black text-slate-900">{formatMonthLabel(selectedMonth)}</span>
+              <span className="text-base font-bold text-slate-900">{formatMonthLabel(selectedMonth)}</span>
               <ForecastBadge
                 status={activeEmiCount === 0 ? "emi-zero" : netMonthSurplus >= 20000 ? "free" : netMonthSurplus >= 8000 ? "stable" : "tight"}
               />
             </div>
-            <p className="text-xs font-semibold text-slate-600">
+            <p className="text-xs text-slate-500 font-medium">
               {activeEmiCount === 0
-                ? "🎉 Complete Financial Freedom! Zero outgoing EMI obligations."
+                ? "Zero outgoing EMI obligations."
                 : `${activeEmiCount} active outgoing EMIs (${formatInr(monthOutgoingEmis)}/mo).`}
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
-            <Button
-              size="sm"
-              variant="outline"
-              className="h-8 text-xs font-bold border-slate-200 text-slate-700 bg-white hover:bg-slate-50 rounded-xl"
-              onClick={resetLocalData}
-              title="Reset entries to default seed data"
-            >
-              <RefreshCcw className="mr-1.5 size-3.5 text-slate-500" /> Reset Seed Data
-            </Button>
-          </div>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-8 text-xs font-medium text-slate-600 hover:text-slate-900"
+            onClick={resetLocalData}
+          >
+            <RefreshCcw className="mr-1.5 size-3.5" /> Reset Data
+          </Button>
         </div>
 
-        {/* Top 4 Vibrant Metric Cards */}
-        <div className="grid grid-cols-2 gap-3.5 sm:grid-cols-4">
+        {/* Top Metric Widgets */}
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <MetricCard
             title="Total Income"
             value={formatInr(monthTotalIncome)}
@@ -835,7 +810,7 @@ export function SafeSpendApp() {
           <MetricCard
             title="Live Bank Balance"
             value={formatInr(currentLiveBankBalance)}
-            detail={currentLiveBankBalance >= liveCashNeededInBank ? "✓ Safety buffer intact" : "⚠️ Needs cash injection"}
+            detail={currentLiveBankBalance >= liveCashNeededInBank ? "Safety buffer intact" : "Needs cash injection"}
             icon={Landmark}
             tone={currentLiveBankBalance >= liveCashNeededInBank ? "safe" : "danger"}
           />
@@ -848,68 +823,68 @@ export function SafeSpendApp() {
           />
         </div>
 
-        {/* HeroUI-Inspired Vibrant Light Tabs */}
+        {/* Clean Segmented Navigation Tabs */}
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6 bg-slate-200/80 p-1.5 rounded-2xl gap-1.5 border border-slate-200/90 shadow-2xs">
-            <TabsTrigger value="plan" className="text-xs sm:text-sm font-bold rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/20 transition-all text-slate-700 hover:text-slate-900">Plan</TabsTrigger>
-            <TabsTrigger value="invest" className="text-xs sm:text-sm font-black rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-emerald-600 data-[state=active]:to-teal-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-emerald-500/20 transition-all text-emerald-800 hover:text-emerald-950">Invest</TabsTrigger>
-            <TabsTrigger value="spend" className="text-xs sm:text-sm font-bold rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/20 transition-all text-slate-700 hover:text-slate-900">Spend</TabsTrigger>
-            <TabsTrigger value="runway" className="text-xs sm:text-sm font-bold rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/20 transition-all text-slate-700 hover:text-slate-900">Runway</TabsTrigger>
-            <TabsTrigger value="emis" className="text-xs sm:text-sm font-bold rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/20 transition-all text-slate-700 hover:text-slate-900">EMIs</TabsTrigger>
-            <TabsTrigger value="cards" className="text-xs sm:text-sm font-bold rounded-xl py-2.5 data-[state=active]:bg-gradient-to-r data-[state=active]:from-violet-600 data-[state=active]:to-indigo-600 data-[state=active]:text-white data-[state=active]:shadow-md data-[state=active]:shadow-indigo-500/20 transition-all text-slate-700 hover:text-slate-900">Cards</TabsTrigger>
+          <TabsList className="grid h-auto w-full grid-cols-3 sm:grid-cols-6 bg-slate-100 p-1 rounded-lg border border-slate-200 gap-1">
+            <TabsTrigger value="plan" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Plan</TabsTrigger>
+            <TabsTrigger value="invest" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-emerald-700 data-[state=active]:shadow-2xs text-slate-600">Invest</TabsTrigger>
+            <TabsTrigger value="spend" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Spend</TabsTrigger>
+            <TabsTrigger value="runway" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Runway</TabsTrigger>
+            <TabsTrigger value="emis" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">EMIs</TabsTrigger>
+            <TabsTrigger value="cards" className="text-xs font-semibold rounded-md py-1.5 data-[state=active]:bg-white data-[state=active]:text-slate-900 data-[state=active]:shadow-2xs text-slate-600">Cards</TabsTrigger>
           </TabsList>
 
           {/* TAB 1: MONTH PLAN & CASHFLOW */}
           <TabsContent value="plan" className="mt-4 space-y-4">
-            {/* Dynamic Live Bank Account Card */}
-            <div className="rounded-2xl border border-sky-300/80 bg-gradient-to-br from-sky-50 via-white to-blue-50/40 p-5 space-y-4 shadow-sm">
+            {/* Live Bank Liquidity Manager */}
+            <div className="rounded-xl border border-slate-200 bg-white p-4 sm:p-5 space-y-4 shadow-2xs">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <div className="flex items-center gap-2">
-                    <Landmark className="size-5 text-sky-600" />
-                    <p className="text-base font-extrabold text-sky-950">
+                    <Landmark className="size-4 text-slate-700" />
+                    <p className="text-sm font-bold text-slate-900">
                       Live Bank Balance & Liquidity Manager ({formatMonthLabel(selectedMonth)})
                     </p>
                   </div>
-                  <p className="text-xs text-sky-800 mt-0.5 font-semibold">
-                    Automatically subtracts debts, EMIs, card bills, and living spends as you pay them.
+                  <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                    Automatically subtracts debts, EMIs, card bills, and living spends as paid.
                   </p>
                 </div>
-                <div className="text-left sm:text-right bg-white p-3.5 rounded-xl border border-sky-200 shadow-2xs">
-                  <p className="text-[10px] font-extrabold text-sky-700 uppercase tracking-wider">Must Maintain in Bank Right Now</p>
-                  <p className="font-mono text-2xl font-black text-sky-950">{formatInr(liveCashNeededInBank)}</p>
-                  <p className="text-[11px] font-bold text-sky-700">
+                <div className="text-left sm:text-right bg-slate-50 p-3 rounded-lg border border-slate-200">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Required Bank Reserve</p>
+                  <p className="font-mono text-xl font-extrabold text-slate-900">{formatInr(liveCashNeededInBank)}</p>
+                  <p className="text-[11px] font-medium text-slate-600">
                     {totalRemainingPendingOutflows > 0
                       ? `${formatInr(totalRemainingPendingOutflows)} pending + ₹5k buffer`
-                      : "✓ All outflows cleared! ₹5k buffer intact"}
+                      : "All outflows cleared! ₹5k buffer intact"}
                   </p>
                 </div>
               </div>
 
-              {/* Progress: Cleared vs Remaining Required */}
-              <div className="space-y-2 rounded-xl bg-white p-4 border border-sky-200/80 shadow-2xs">
-                <div className="flex items-center justify-between text-xs font-extrabold text-sky-950">
-                  <span>Outflows Settled vs Pending</span>
-                  <span className="font-mono text-slate-800">
-                    {formatInr(totalDebtsPaidSoFar)} cleared / {formatInr(totalDebtsOriginalTotal)} total
+              {/* Progress */}
+              <div className="space-y-1.5 rounded-lg bg-slate-50 p-3 border border-slate-200">
+                <div className="flex items-center justify-between text-xs font-semibold text-slate-700">
+                  <span>Outflows Settled</span>
+                  <span className="font-mono">
+                    {formatInr(totalDebtsPaidSoFar)} / {formatInr(totalDebtsOriginalTotal)}
                   </span>
                 </div>
-                <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2.5 bg-sky-100" />
+                <Progress value={totalDebtsOriginalTotal > 0 ? (totalDebtsPaidSoFar / totalDebtsOriginalTotal) * 100 : 100} className="h-2 bg-slate-200" />
               </div>
             </div>
 
-            {/* Income Manager */}
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            {/* Income Streams */}
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg font-black text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</CardTitle>
-                    <CardDescription className="text-xs text-slate-500 font-medium">Toggle switch when salary/freelance money lands in bank.</CardDescription>
+                    <CardTitle className="text-base font-bold text-slate-900">Income Streams ({formatMonthLabel(selectedMonth)})</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">Toggle switch when salary/freelance money is received.</CardDescription>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs font-bold border-indigo-200 text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-xl"
+                    className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
                     onClick={() => setShowAddIncome(!showAddIncome)}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Income
@@ -918,56 +893,56 @@ export function SafeSpendApp() {
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
                 {showAddIncome && (
-                  <form onSubmit={handleAddIncome} className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 space-y-3">
-                    <p className="text-xs font-extrabold text-indigo-950">Add Extra Income Stream for {formatMonthLabel(selectedMonth)}</p>
+                  <form onSubmit={handleAddIncome} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
+                    <p className="text-xs font-bold text-slate-900">Add Income Stream</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                       <Input
-                        placeholder="Source name (e.g. Freelance)"
+                        placeholder="Source (e.g. Freelance)"
                         value={newIncomeName}
                         onChange={(e) => setNewIncomeName(e.target.value)}
-                        className="bg-white border-slate-200 text-xs rounded-xl"
+                        className="bg-white border-slate-200 text-xs h-9"
                       />
                       <Input
                         placeholder="Amount (₹)"
                         type="number"
                         value={newIncomeAmount}
                         onChange={(e) => setNewIncomeAmount(e.target.value)}
-                        className="bg-white border-slate-200 text-xs rounded-xl"
+                        className="bg-white border-slate-200 text-xs h-9"
                       />
                       <Input
                         placeholder="Expected date (e.g. Mid Sep)"
                         value={newIncomeDate}
                         onChange={(e) => setNewIncomeDate(e.target.value)}
-                        className="bg-white border-slate-200 text-xs rounded-xl"
+                        className="bg-white border-slate-200 text-xs h-9"
                       />
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-bold bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl">Save Income</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600 rounded-xl" onClick={() => setShowAddIncome(false)}>Cancel</Button>
+                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white">Save</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddIncome(false)}>Cancel</Button>
                     </div>
                   </form>
                 )}
 
                 <div className="space-y-2">
                   {currentIncomes.map((source) => (
-                    <div key={source.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 bg-white hover:bg-slate-50 transition-colors">
+                    <div key={source.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white hover:bg-slate-50/80 transition-colors">
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="truncate text-sm font-bold text-slate-900">{source.name}</p>
-                          <Badge variant="outline" className={cn("text-[10px] font-extrabold px-2 py-0.5 rounded-md", source.status === "received" ? "border-emerald-300 bg-emerald-100 text-emerald-900" : "border-slate-300 bg-slate-100 text-slate-700")}>
-                            {source.status === "received" ? "✓ Received" : `Pending (${source.expectedDate})`}
-                          </Badge>
+                          <p className="truncate text-sm font-semibold text-slate-900">{source.name}</p>
+                          <span className={cn("text-[10px] font-semibold px-2 py-0.5 rounded-md border", source.status === "received" ? "border-emerald-200 bg-emerald-50 text-emerald-700" : "border-slate-200 bg-slate-50 text-slate-600")}>
+                            {source.status === "received" ? "Received" : `Pending (${source.expectedDate})`}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                        <p className="font-mono text-sm font-black text-slate-900">{formatInr(source.amount)}</p>
+                        <p className="font-mono text-sm font-bold text-slate-900">{formatInr(source.amount)}</p>
                         <Switch
                           checked={source.status === "received"}
                           onCheckedChange={() => toggleIncomeStatus(source.id)}
                           aria-label={`Toggle status for ${source.name}`}
                         />
                         {monthlyIncomes[selectedMonth] && (
-                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600 rounded-lg" onClick={() => deleteIncome(source.id)}>
+                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteIncome(source.id)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         )}
@@ -978,18 +953,18 @@ export function SafeSpendApp() {
               </CardContent>
             </Card>
 
-            {/* Custom Debts Manager */}
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            {/* Custom Debts */}
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
                   <div>
-                    <CardTitle className="text-lg font-black text-slate-900">Custom Debts & Loans ({formatMonthLabel(selectedMonth)})</CardTitle>
-                    <CardDescription className="text-xs text-slate-500 font-medium">Track loans from friends, private lenders, or apps.</CardDescription>
+                    <CardTitle className="text-base font-bold text-slate-900">Custom Debts ({formatMonthLabel(selectedMonth)})</CardTitle>
+                    <CardDescription className="text-xs text-slate-500">Track loans from friends or lenders.</CardDescription>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="h-8 text-xs font-bold border-amber-200 text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-xl"
+                    className="h-8 text-xs font-medium border-slate-200 text-slate-700 hover:bg-slate-50"
                     onClick={() => setShowAddDebt(!showAddDebt)}
                   >
                     <Plus className="mr-1 size-3.5" /> Add Debt
@@ -998,33 +973,33 @@ export function SafeSpendApp() {
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
                 {showAddDebt && (
-                  <form onSubmit={handleAddDebt} className="rounded-xl border border-amber-200 bg-amber-50/40 p-4 space-y-3">
-                    <p className="text-xs font-extrabold text-amber-950">Add New Debt / Loan Item</p>
+                  <form onSubmit={handleAddDebt} className="rounded-lg border border-slate-200 bg-slate-50 p-3.5 space-y-3">
+                    <p className="text-xs font-bold text-slate-900">Add Custom Debt</p>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                      <Input placeholder="Debt name (e.g. Friend Loan)" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border-slate-200 text-xs rounded-xl" />
-                      <Input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border-slate-200 text-xs rounded-xl" />
-                      <Input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border-slate-200 text-xs rounded-xl" />
+                      <Input placeholder="Debt name" value={newDebtName} onChange={(e) => setNewDebtName(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
+                      <Input placeholder="Lender name" value={newDebtLender} onChange={(e) => setNewDebtLender(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
+                      <Input placeholder="Total Amount (₹)" type="number" value={newDebtAmount} onChange={(e) => setNewDebtAmount(e.target.value)} className="bg-white border-slate-200 text-xs h-9" />
                     </div>
                     <div className="flex gap-2">
-                      <Button size="sm" type="submit" className="h-8 text-xs font-bold bg-amber-600 hover:bg-amber-700 text-white rounded-xl">Save Debt</Button>
-                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600 rounded-xl" onClick={() => setShowAddDebt(false)}>Cancel</Button>
+                      <Button size="sm" type="submit" className="h-8 text-xs font-medium bg-slate-900 hover:bg-slate-800 text-white">Save</Button>
+                      <Button size="sm" type="button" variant="ghost" className="h-8 text-xs text-slate-600" onClick={() => setShowAddDebt(false)}>Cancel</Button>
                     </div>
                   </form>
                 )}
 
                 {currentCustomDebts.length === 0 ? (
-                  <p className="text-xs text-slate-500 font-medium italic">No custom debts logged for {formatMonthLabel(selectedMonth)}.</p>
+                  <p className="text-xs text-slate-500 italic">No custom debts for {formatMonthLabel(selectedMonth)}.</p>
                 ) : (
                   <div className="space-y-2">
                     {currentCustomDebts.map((d) => (
-                      <div key={d.id} className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 p-3.5 bg-white">
+                      <div key={d.id} className="flex items-center justify-between gap-3 rounded-lg border border-slate-200 p-3 bg-white">
                         <div>
-                          <p className="text-sm font-bold text-slate-900">{d.name} ({d.lender})</p>
+                          <p className="text-sm font-semibold text-slate-900">{d.name} ({d.lender})</p>
                           {d.note && <p className="text-xs text-slate-500">{d.note}</p>}
                         </div>
                         <div className="flex items-center gap-3">
-                          <p className="font-mono text-sm font-black text-slate-900">{formatInr(d.totalAmount)}</p>
-                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600 rounded-lg" onClick={() => deleteDebt(d.id)}>
+                          <p className="font-mono text-sm font-bold text-slate-900">{formatInr(d.totalAmount)}</p>
+                          <Button size="icon" variant="ghost" className="size-7 text-slate-400 hover:text-red-600" onClick={() => deleteDebt(d.id)}>
                             <Trash2 className="size-3.5" />
                           </Button>
                         </div>
@@ -1038,47 +1013,47 @@ export function SafeSpendApp() {
 
           {/* TAB 2: WEALTH INVESTMENT ENGINE */}
           <TabsContent value="invest" className="mt-4 space-y-4">
-            <Card className="overflow-hidden border-emerald-200 shadow-sm rounded-2xl bg-white">
-              <div className="bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 p-5 text-white shadow-md">
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl overflow-hidden">
+              <div className="bg-slate-900 p-4 sm:p-5 text-white">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="size-5 text-yellow-300" />
-                  <h2 className="text-lg font-black">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
+                  <Sparkles className="size-4 text-emerald-400" />
+                  <h2 className="text-base font-bold">{investmentPlan.stageName} ({formatMonthLabel(selectedMonth)})</h2>
                 </div>
-                <p className="text-xs text-emerald-100 mt-1 font-semibold">{investmentPlan.strategyGuidance}</p>
+                <p className="text-xs text-slate-300 mt-1 font-normal">{investmentPlan.strategyGuidance}</p>
               </div>
-              <CardContent className="p-5 space-y-4">
-                <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 space-y-2">
+              <CardContent className="p-4 sm:p-5 space-y-4">
+                <div className="rounded-lg border border-slate-200 bg-slate-50 p-4 space-y-1">
                   <div className="flex justify-between items-center">
-                    <span className="text-xs font-extrabold text-emerald-950 uppercase tracking-wider">Total Monthly Surplus Invested</span>
-                    <span className="font-mono text-2xl font-black text-emerald-900">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
+                    <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Total Monthly Surplus Invested</span>
+                    <span className="font-mono text-2xl font-extrabold text-emerald-700">{formatInr(investmentPlan.totalInvestedThisMonth)}</span>
                   </div>
                 </div>
 
-                <div className="space-y-3 pt-1">
-                  <p className="text-xs font-extrabold uppercase tracking-wider text-slate-600">Fund Allocation Breakdown:</p>
+                <div className="space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Fund Allocation Breakdown:</p>
 
-                  <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/80 space-y-1.5">
-                    <div className="flex justify-between text-sm font-extrabold text-slate-900">
+                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
                       <span>{investmentPlan.liquidFundName}</span>
                       <span className="font-mono text-emerald-700">{formatInr(investmentPlan.liquidFundAmount)}</span>
                     </div>
-                    <p className="text-xs text-slate-600 font-semibold">{investmentPlan.liquidFundNote}</p>
+                    <p className="text-xs text-slate-500">{investmentPlan.liquidFundNote}</p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/80 space-y-1.5">
-                    <div className="flex justify-between text-sm font-extrabold text-slate-900">
+                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
                       <span>{investmentPlan.niftyIndexFundName}</span>
                       <span className="font-mono text-emerald-700">{formatInr(investmentPlan.niftyIndexFundAmount)}</span>
                     </div>
-                    <p className="text-xs text-slate-600 font-semibold">{investmentPlan.niftyIndexFundNote}</p>
+                    <p className="text-xs text-slate-500">{investmentPlan.niftyIndexFundNote}</p>
                   </div>
 
-                  <div className="rounded-xl border border-slate-200 p-4 bg-slate-50/80 space-y-1.5">
-                    <div className="flex justify-between text-sm font-extrabold text-slate-900">
+                  <div className="rounded-lg border border-slate-200 p-3.5 bg-white space-y-1">
+                    <div className="flex justify-between text-sm font-bold text-slate-900">
                       <span>{investmentPlan.flexiCapFundName}</span>
                       <span className="font-mono text-emerald-700">{formatInr(investmentPlan.flexiCapFundAmount)}</span>
                     </div>
-                    <p className="text-xs text-slate-600 font-semibold">{investmentPlan.flexiCapFundNote}</p>
+                    <p className="text-xs text-slate-500">{investmentPlan.flexiCapFundNote}</p>
                   </div>
                 </div>
               </CardContent>
@@ -1088,28 +1063,28 @@ export function SafeSpendApp() {
           {/* TAB 3: SPEND TRACKER & PARTIAL PAYMENT ENGINE */}
           <TabsContent value="spend" className="mt-4 space-y-4">
             {/* Form Card */}
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="flex items-center gap-2 text-lg font-black text-slate-900">
+                <CardTitle className="flex items-center gap-2 text-base font-bold text-slate-900">
                   {editingEntryId ? (
                     <>
-                      <Pencil className="size-5 text-amber-600" /> Edit Spend or Payment Entry
+                      <Pencil className="size-4 text-amber-600" /> Edit Spend Entry
                     </>
                   ) : (
                     <>
-                      <Plus className="size-5 text-indigo-600" /> Add Spend or Debt Payment
+                      <Plus className="size-4 text-slate-900" /> Add Spend or Debt Payment
                     </>
                   )}
                 </CardTitle>
-                <CardDescription className="text-xs text-slate-500 font-medium">
-                  {editingEntryId ? "Update entry details below and save changes." : "Log daily expenses or debt payoffs. Interactive category & payment pills below!"}
+                <CardDescription className="text-xs text-slate-500">
+                  {editingEntryId ? "Update entry details below." : "Log daily expenses or debt payoffs."}
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2">
                 <form className="space-y-4" onSubmit={addSpend}>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label htmlFor="spendDate" className="text-xs font-bold text-slate-700">Date of Expense</Label>
+                      <Label htmlFor="spendDate" className="text-xs font-semibold text-slate-700">Date</Label>
                       <Input
                         id="spendDate"
                         type="date"
@@ -1120,13 +1095,13 @@ export function SafeSpendApp() {
                           const today = getLocalDateString();
                           setSpendDate(val > today ? today : val);
                         }}
-                        className="bg-white border-slate-200 text-sm h-10 rounded-xl"
+                        className="bg-white border-slate-200 text-sm h-10 rounded-lg"
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="amount" className="text-xs font-bold text-slate-700">Amount (₹)</Label>
+                      <Label htmlFor="amount" className="text-xs font-semibold text-slate-700">Amount (₹)</Label>
                       <div className="relative">
-                        <span className="absolute left-3 top-2.5 text-sm font-bold text-indigo-600">₹</span>
+                        <span className="absolute left-3 top-2.5 text-sm font-bold text-slate-400 font-mono">₹</span>
                         <Input
                           id="amount"
                           inputMode="numeric"
@@ -1135,80 +1110,44 @@ export function SafeSpendApp() {
                           type="number"
                           value={amount}
                           onChange={(event) => setAmount(event.target.value)}
-                          className="bg-white border-slate-200 text-sm h-10 pl-7 font-mono font-bold text-slate-900 rounded-xl"
+                          className="bg-white border-slate-200 text-sm h-10 pl-7 font-mono font-bold text-slate-900 rounded-lg"
                         />
                       </div>
                     </div>
                   </div>
 
-                  {/* Practical Category Selection Cards (Replaces Select Dropdown) */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-700">Select Expense Category</Label>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                      {categoryOptions.map((cat) => {
-                        const isSelected = categoryId === cat.id;
-                        return (
-                          <button
-                            key={cat.id}
-                            type="button"
-                            onClick={() => setCategoryId(cat.id)}
-                            className={cn(
-                              "flex flex-col items-start p-3 rounded-xl border text-left transition-all relative overflow-hidden",
-                              isSelected
-                                ? "bg-gradient-to-r from-violet-50 via-indigo-50 to-purple-50 border-2 border-indigo-600 text-indigo-950 font-bold shadow-xs ring-2 ring-indigo-500/20"
-                                : "bg-white border-slate-200/90 text-slate-700 hover:border-indigo-300 hover:bg-slate-50",
-                            )}
-                          >
-                            <div className="flex items-center justify-between w-full">
-                              <span className="text-sm font-bold">{cat.icon} {cat.label}</span>
-                              {isSelected && <Check className="size-4 text-indigo-600 shrink-0" />}
-                            </div>
-                            <span className={cn("text-[11px] mt-1 font-semibold", isSelected ? "text-indigo-700" : "text-slate-500")}>
-                              {cat.budget}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Quick Debt Category Chips */}
-                    {debtPaymentStats.length > 0 && (
-                      <div className="space-y-1.5 pt-2">
-                        <p className="text-[11px] font-extrabold text-slate-500 uppercase tracking-wider">Or Select Debt / Repayment Category:</p>
-                        <div className="flex flex-wrap gap-2">
-                          {debtPaymentStats.map((debt) => {
-                            const isSelected = categoryId === debt.id;
-                            return (
-                              <button
-                                key={debt.id}
-                                type="button"
-                                onClick={() => {
-                                  setCategoryId(debt.id);
-                                  if (!amount && debt.remainingBalance > 0) setAmount(String(debt.remainingBalance));
-                                }}
-                                className={cn(
-                                  "px-3 py-2 rounded-xl text-xs font-bold border transition-all flex items-center gap-1.5",
-                                  isSelected
-                                    ? "bg-amber-100 border-2 border-amber-500 text-amber-950 shadow-xs"
-                                    : "bg-white border-slate-200 text-slate-700 hover:bg-slate-50",
-                                )}
-                              >
-                                <span>{debt.priority === "high" ? "🚨" : "🤝"}</span>
-                                <span>{debt.name}</span>
-                                <span className="font-mono text-[11px] opacity-80">({debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)})</span>
-                                {isSelected && <Check className="size-3.5 text-amber-700 ml-0.5" />}
-                              </button>
-                            );
-                          })}
-                        </div>
-                      </div>
-                    )}
+                  {/* Clean Category Select */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="categorySelect" className="text-xs font-semibold text-slate-700">Expense Category</Label>
+                    <select
+                      id="categorySelect"
+                      value={categoryId}
+                      onChange={(e) => setCategoryId(e.target.value)}
+                      className="w-full bg-white border border-slate-200 text-sm font-medium text-slate-900 rounded-lg h-10 px-3 focus:outline-none focus:ring-2 focus:ring-slate-900 cursor-pointer"
+                    >
+                      <optgroup label="Living Expenses">
+                        {categoryOptions.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.icon} {cat.label} ({cat.budget})
+                          </option>
+                        ))}
+                      </optgroup>
+                      {debtPaymentStats.length > 0 && (
+                        <optgroup label="Debt & EMI Payoffs">
+                          {debtPaymentStats.map((debt) => (
+                            <option key={debt.id} value={debt.id}>
+                              {debt.priority === "high" ? "🚨" : "🤝"} {debt.name} ({debt.isCleared ? "Cleared" : formatInr(debt.remainingBalance)})
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                    </select>
                   </div>
 
-                  {/* Practical Payment Method Segmented Control */}
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold text-slate-700">Payment Method</Label>
-                    <div className="flex flex-wrap gap-1.5 p-1.5 bg-slate-100/90 rounded-xl border border-slate-200">
+                  {/* Payment Method Selector */}
+                  <div className="space-y-1.5">
+                    <Label className="text-xs font-semibold text-slate-700">Payment Method</Label>
+                    <div className="flex flex-wrap gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                       {paymentMethods.map((method) => {
                         const isSelected = paidBy === method.id;
                         return (
@@ -1217,14 +1156,13 @@ export function SafeSpendApp() {
                             type="button"
                             onClick={() => setPaidBy(method.id)}
                             className={cn(
-                              "flex-1 min-w-[80px] py-2 px-3 text-xs font-bold rounded-lg transition-all text-center flex items-center justify-center gap-1",
+                              "flex-1 min-w-[70px] py-1.5 px-3 text-xs font-medium rounded-md transition-colors text-center",
                               isSelected
-                                ? "bg-gradient-to-r from-violet-600 to-indigo-600 text-white shadow-xs"
-                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/70",
+                                ? "bg-white text-slate-900 font-semibold shadow-2xs border border-slate-200/80"
+                                : "text-slate-600 hover:text-slate-900 hover:bg-slate-200/50",
                             )}
                           >
-                            <span>{method.icon}</span>
-                            <span>{method.label}</span>
+                            {method.label}
                           </button>
                         );
                       })}
@@ -1232,35 +1170,35 @@ export function SafeSpendApp() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="note" className="text-xs font-bold text-slate-700">Note / Remarks (Optional)</Label>
+                    <Label htmlFor="note" className="text-xs font-semibold text-slate-700">Note / Remarks (Optional)</Label>
                     <Input
                       id="note"
-                      placeholder="e.g. Grocery store purchase, UPI transaction..."
+                      placeholder="e.g. Grocery store purchase..."
                       value={note}
                       onChange={(event) => setNote(event.target.value)}
-                      className="bg-white border-slate-200 text-xs h-10 rounded-xl"
+                      className="bg-white border-slate-200 text-xs h-10 rounded-lg"
                     />
                   </div>
 
                   {paidBy !== "upi" && paidBy !== "cash" && (
-                    <Alert className="border-amber-200 bg-amber-50">
+                    <Alert className="border-amber-200 bg-amber-50 rounded-lg">
                       <AlertCircle className="size-4 text-amber-800" />
-                      <AlertTitle className="text-xs font-bold text-amber-950">Credit Card Usage Warning</AlertTitle>
-                      <AlertDescription className="text-xs font-semibold text-amber-900">
-                        Rule: Card usage should remain ₹0 until credit utilization drops below 30%.
+                      <AlertTitle className="text-xs font-bold text-amber-900">Card Warning</AlertTitle>
+                      <AlertDescription className="text-xs text-amber-800 font-medium">
+                        Card usage should remain ₹0 until utilization drops below 30%.
                       </AlertDescription>
                     </Alert>
                   )}
 
                   <div className="flex items-center gap-2 pt-1">
-                    <Button className="h-11 flex-1 text-sm font-extrabold bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white shadow-md shadow-indigo-500/20 rounded-xl" type="submit">
-                      {editingEntryId ? "Update Spend Entry" : "Save Spend / Payment"}
+                    <Button className="h-10 flex-1 text-sm font-semibold bg-slate-900 hover:bg-slate-800 text-white rounded-lg shadow-xs" type="submit">
+                      {editingEntryId ? "Update Entry" : "Save Spend / Payment"}
                     </Button>
                     {editingEntryId && (
                       <Button
                         type="button"
                         variant="outline"
-                        className="h-11 border-slate-200 text-slate-700 rounded-xl font-bold"
+                        className="h-10 border-slate-200 text-slate-700 rounded-lg"
                         onClick={cancelEditingEntry}
                       >
                         Cancel
@@ -1272,64 +1210,62 @@ export function SafeSpendApp() {
             </Card>
 
             {/* Budget Pace Meter */}
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-black text-slate-900">Safe Spend Pace Meter</CardTitle>
+                  <CardTitle className="text-base font-bold text-slate-900">Budget Pace</CardTitle>
                   <StatusBadge status={pace.status} />
                 </div>
-                <CardDescription className="text-xs font-semibold text-slate-500">{pace.message}</CardDescription>
+                <CardDescription className="text-xs text-slate-500 font-medium">{pace.message}</CardDescription>
               </CardHeader>
               <CardContent className="space-y-4 p-4 sm:p-5 pt-2">
                 <div>
-                  <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
+                  <div className="mb-2 flex items-center justify-between text-xs font-semibold text-slate-700">
                     <span>Monthly Variable Spend</span>
                     <span className="font-mono">
                       {formatInr(variableSpent)} / {formatInr(variableBudget)}
                     </span>
                   </div>
-                  <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2.5 bg-slate-100" />
+                  <Progress value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2 bg-slate-100" />
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Day</p>
-                    <p className="mt-1 font-mono text-base font-black text-slate-900">{dayOfMonth}/30</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                    <p className="text-slate-500 font-medium">Day</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{dayOfMonth}/30</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Allowed Today</p>
-                    <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                    <p className="text-slate-500 font-medium">Allowed Today</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.allowedByToday)}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Projected End</p>
-                    <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-2.5">
+                    <p className="text-slate-500 font-medium">Projected End</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Spend Ledger & Filterable History */}
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            {/* Spend History */}
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
                 <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                   <div>
-                    <CardTitle className="text-base font-black text-slate-900">Spend History & Ledger</CardTitle>
+                    <CardTitle className="text-base font-bold text-slate-900">Spend History</CardTitle>
                     <CardDescription className="text-xs text-slate-500 font-medium">
                       {filteredEntries.length
                         ? `Showing ${filteredEntries.length} of ${entries.length} entries`
-                        : entries.length
-                        ? `No entries for selected filter`
-                        : "No spends logged yet."}
+                        : "No spends logged."}
                     </CardDescription>
                   </div>
 
                   {/* Date Filter Buttons */}
-                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+                  <div className="flex flex-wrap items-center gap-1 bg-slate-100 p-1 rounded-lg border border-slate-200">
                     <Button
                       type="button"
                       size="sm"
                       variant={spendListFilter === "all" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-bold px-2.5 rounded-lg", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "all" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("all")}
                     >
                       All
@@ -1338,7 +1274,7 @@ export function SafeSpendApp() {
                       type="button"
                       size="sm"
                       variant={spendListFilter === "today" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-bold px-2.5 rounded-lg", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "today" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("today")}
                     >
                       Today
@@ -1347,7 +1283,7 @@ export function SafeSpendApp() {
                       type="button"
                       size="sm"
                       variant={spendListFilter === "yesterday" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-bold px-2.5 rounded-lg", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "yesterday" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => setSpendListFilter("yesterday")}
                     >
                       Yesterday
@@ -1356,7 +1292,7 @@ export function SafeSpendApp() {
                       type="button"
                       size="sm"
                       variant={spendListFilter === "custom" ? "default" : "ghost"}
-                      className={cn("h-7 text-xs font-bold px-2.5 rounded-lg", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
+                      className={cn("h-7 text-xs font-semibold px-2.5 rounded-md", spendListFilter === "custom" && "bg-white text-slate-900 shadow-2xs")}
                       onClick={() => {
                         setSpendListFilter("custom");
                         if (!spendListCustomDate) setSpendListCustomDate(getLocalDateString());
@@ -1378,14 +1314,14 @@ export function SafeSpendApp() {
                         const today = getLocalDateString();
                         setSpendListCustomDate(val > today ? today : val);
                       }}
-                      className="h-8 text-xs bg-white max-w-[180px] rounded-lg"
+                      className="h-8 text-xs bg-white max-w-[180px] rounded-md"
                     />
                   </div>
                 )}
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2">
                 {filteredEntries.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-semibold">
+                  <div className="rounded-lg border border-dashed border-slate-200 p-6 text-center text-xs text-slate-500 font-medium">
                     No spend entries found for the selected filter.
                   </div>
                 ) : (
@@ -1395,31 +1331,31 @@ export function SafeSpendApp() {
                       const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
                       const method = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
                       const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
-                      const categoryLabel = debtCategory?.name ? `🤝 Debt: ${debtCategory.name}` : category?.name;
+                      const categoryLabel = debtCategory?.name ? `Debt: ${debtCategory.name}` : category?.name;
                       const isEditingThis = editingEntryId === entry.id;
 
                       return (
                         <div
                           key={entry.id}
                           className={cn(
-                            "flex items-center justify-between gap-3 rounded-xl border p-3.5 transition-colors bg-white",
-                            isEditingThis ? "border-amber-400 bg-amber-50 ring-1 ring-amber-400/50" : "border-slate-200 hover:bg-slate-50",
+                            "flex items-center justify-between gap-3 rounded-lg border p-3 transition-colors bg-white",
+                            isEditingThis ? "border-amber-300 bg-amber-50" : "border-slate-200 hover:bg-slate-50/80",
                           )}
                         >
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-extrabold text-slate-900">{displayName}</p>
-                            <p className="text-xs text-slate-500 font-semibold">
+                            <p className="truncate text-sm font-semibold text-slate-900">{displayName}</p>
+                            <p className="text-xs text-slate-500 font-medium">
                               {categoryLabel} · {method} · <span className="font-mono text-slate-700">{entry.date}</span>
                             </p>
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
-                            <p className="font-mono text-sm font-black text-slate-900 mr-1">{formatInr(entry.amount)}</p>
+                            <p className="font-mono text-sm font-bold text-slate-900 mr-1">{formatInr(entry.amount)}</p>
                             <Button
                               aria-label="Edit spend entry"
                               size="icon"
                               type="button"
                               variant="ghost"
-                              className="size-8 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-lg"
+                              className="size-7 text-slate-400 hover:text-amber-700 hover:bg-amber-100 rounded-md"
                               onClick={() => startEditingEntry(entry)}
                             >
                               <Pencil className="size-3.5" />
@@ -1429,7 +1365,7 @@ export function SafeSpendApp() {
                               size="icon"
                               type="button"
                               variant="ghost"
-                              className="size-8 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-lg"
+                              className="size-7 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-md"
                               onClick={() => {
                                 if (editingEntryId === entry.id) cancelEditingEntry();
                                 setEntries((current) => current.filter((item) => item.id !== entry.id));
@@ -1443,30 +1379,30 @@ export function SafeSpendApp() {
                     })}
                   </div>
                 )}
-              </CardContent>
+              CardContent>
             </Card>
           </TabsContent>
 
           {/* TAB 4: RUNWAY & TIMELINE */}
           <TabsContent value="runway" className="mt-4 space-y-4">
-            <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+            <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
               <CardHeader className="p-4 sm:p-5 pb-2">
-                <CardTitle className="text-base font-black text-slate-900">Salary-Only Runway Forecast</CardTitle>
+                <CardTitle className="text-base font-bold text-slate-900">Salary-Only Runway Forecast</CardTitle>
                 <CardDescription className="text-xs text-slate-500 font-medium">Trajectory towards Zero EMI freedom.</CardDescription>
               </CardHeader>
               <CardContent className="p-4 sm:p-5 pt-2 space-y-3">
                 <div className="grid grid-cols-3 gap-2 text-center text-xs">
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Living budget</p>
-                    <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(octoberSeedData.futureMonthlyLivingBudget)}</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-medium">Living budget</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{formatInr(octoberSeedData.futureMonthlyLivingBudget)}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Zero EMI Month</p>
-                    <p className="mt-1 font-mono text-base font-black text-indigo-700">{firstZeroEmiMonth?.label ?? "TBD"}</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-medium">Zero EMI Month</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-slate-900">{firstZeroEmiMonth?.label ?? "TBD"}</p>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
-                    <p className="text-slate-500 font-bold">Free Months (&gt;₹20k)</p>
-                    <p className="mt-1 font-mono text-base font-black text-emerald-700">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} mo</p>
+                  <div className="rounded-lg border border-slate-200 bg-slate-50 p-3">
+                    <p className="text-slate-500 font-medium">Free Months (&gt;₹20k)</p>
+                    <p className="mt-0.5 font-mono text-sm font-bold text-emerald-700">{monthPreviews.filter((p) => p.youKeepThisMonth >= 20000).length} mo</p>
                   </div>
                 </div>
               </CardContent>
@@ -1476,46 +1412,46 @@ export function SafeSpendApp() {
           {/* TAB 5: EMIS LEDGER */}
           <TabsContent value="emis" className="mt-4 space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
                 <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-extrabold text-slate-900">Personal EMIs</CardTitle>
-                  <CardDescription className="text-xs font-mono font-bold text-indigo-600">{formatInr(monthPersonalEmisTotal)}/mo</CardDescription>
+                  <CardTitle className="text-sm font-bold text-slate-900">Personal EMIs</CardTitle>
+                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthPersonalEmisTotal)}/mo</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-2">
                   {currentPersonalEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="font-bold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-black text-slate-900">{formatInr(e.amount)}</span>
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
                     </div>
                   ))}
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
                 <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-extrabold text-slate-900">Venkat Payable EMIs</CardTitle>
-                  <CardDescription className="text-xs font-mono font-bold text-amber-700">{formatInr(monthVenkatPayableTotal)}/mo</CardDescription>
+                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Payable EMIs</CardTitle>
+                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatPayableTotal)}/mo</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-2">
                   {currentVenkatPayableEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="font-bold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-black text-slate-900">{formatInr(e.amount)}</span>
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
                     </div>
                   ))}
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200 shadow-sm rounded-2xl bg-white">
+              <Card className="border-slate-200 bg-white shadow-2xs rounded-xl">
                 <CardHeader className="p-4">
-                  <CardTitle className="text-sm font-extrabold text-slate-900">Venkat Receivable (On Name)</CardTitle>
-                  <CardDescription className="text-xs font-mono font-bold text-sky-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</CardDescription>
+                  <CardTitle className="text-sm font-bold text-slate-900">Venkat Receivable (On Name)</CardTitle>
+                  <CardDescription className="text-xs font-mono font-semibold text-slate-700">{formatInr(monthVenkatDebitOnNameTotal)}/mo</CardDescription>
                 </CardHeader>
                 <CardContent className="p-4 pt-0 space-y-2">
                   {currentVenkatOnYourNameEmis.map((e) => (
-                    <div key={e.id} className="flex justify-between text-xs p-2.5 rounded-xl bg-slate-50 border border-slate-100">
-                      <span className="font-bold text-slate-800">{e.name}</span>
-                      <span className="font-mono font-black text-slate-900">{formatInr(e.amount)}</span>
+                    <div key={e.id} className="flex justify-between text-xs p-2 rounded-md bg-slate-50 border border-slate-100">
+                      <span className="font-semibold text-slate-800">{e.name}</span>
+                      <span className="font-mono font-bold text-slate-900">{formatInr(e.amount)}</span>
                     </div>
                   ))}
                 </CardContent>
@@ -1529,24 +1465,24 @@ export function SafeSpendApp() {
               {octoberSeedData.cards.map((card) => {
                 const cardStatus = getCardUsageStatus(card);
                 return (
-                  <Card key={card.name} className="border-slate-200 shadow-sm rounded-2xl bg-white">
+                  <Card key={card.name} className="border-slate-200 bg-white shadow-2xs rounded-xl">
                     <CardHeader className="p-4">
                       <div className="flex justify-between items-center">
-                        <CardTitle className="text-base font-black text-slate-900">{card.name}</CardTitle>
-                        <Badge variant="outline" className={cn("text-[10px] font-extrabold px-2 py-0.5 rounded-md", cardStatus.status === "freeze" ? "border-rose-300 bg-rose-100 text-rose-900" : "border-emerald-300 bg-emerald-100 text-emerald-900")}>
+                        <CardTitle className="text-base font-bold text-slate-900">{card.name}</CardTitle>
+                        <span className={cn("text-[10px] font-bold px-2 py-0.5 rounded-md border", cardStatus.status === "freeze" ? "border-red-200 bg-red-50 text-red-700" : "border-emerald-200 bg-emerald-50 text-emerald-700")}>
                           {cardStatus.status === "freeze" ? "FREEZE" : "SAFE"}
-                        </Badge>
+                        </span>
                       </div>
                     </CardHeader>
                     <CardContent className="p-4 pt-0 space-y-3">
                       <div>
-                        <div className="flex justify-between text-xs font-bold text-slate-700 mb-1">
+                        <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
                           <span>Limit Utilized</span>
-                          <span className="font-mono font-black text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
+                          <span className="font-mono font-bold text-slate-900">{Math.round(cardStatus.utilization * 100)}%</span>
                         </div>
                         <Progress value={cardStatus.utilization * 100} className="h-2 bg-slate-100" />
                       </div>
-                      <div className="flex justify-between text-xs font-bold text-slate-600">
+                      <div className="flex justify-between text-xs font-medium text-slate-500">
                         <span>Used: {formatInr(cardStatus.used)}</span>
                         <span>Available: {formatInr(card.available)}</span>
                       </div>
