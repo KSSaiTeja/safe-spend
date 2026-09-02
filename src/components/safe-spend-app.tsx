@@ -203,13 +203,14 @@ export function SafeSpendApp() {
   const [showCalendarPopover, setShowCalendarPopover] = useState(false);
   const [showMonthDropdown, setShowMonthDropdown] = useState(false);
   const [showSpendModal, setShowSpendModal] = useState(false);
+  const [showAddIncomeModal, setShowAddIncomeModal] = useState(false);
 
   // Active view tab (Spend Tracker is default #1)
   const [activeTab, setActiveTab] = useState<"spend" | "plan" | "invest" | "emis" | "cards">("spend");
   const [spendListFilter, setSpendListFilter] = useState<"all" | "today" | "yesterday">("all");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Income entry form states for selected month
+  // New Income Entry Form States
   const [newIncomeName, setNewIncomeName] = useState("");
   const [newIncomeAmount, setNewIncomeAmount] = useState("");
   const [newIncomeDate, setNewIncomeDate] = useState("");
@@ -492,6 +493,49 @@ export function SafeSpendApp() {
     return list;
   }, [entries, spendListFilter, searchQuery]);
 
+  function handleAddIncome(e: FormEvent) {
+    e.preventDefault();
+    const parsed = Number(newIncomeAmount);
+    if (!newIncomeName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
+
+    const newSource: IncomeSource = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: newIncomeName.trim(),
+      amount: Math.round(parsed),
+      expectedDate: newIncomeDate.trim() || "Expected this month",
+      status: "expected",
+    };
+
+    setMonthlyIncomes((prev) => ({
+      ...prev,
+      [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
+    }));
+
+    setNewIncomeName("");
+    setNewIncomeAmount("");
+    setNewIncomeDate("");
+    setShowAddIncomeModal(false);
+  }
+
+  function toggleIncomeStatus(sourceId: string) {
+    setMonthlyIncomes((prev) => {
+      const list = prev[selectedMonth] ?? currentIncomes;
+      const updated = list.map((item) =>
+        item.id === sourceId
+          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
+          : item,
+      );
+      return { ...prev, [selectedMonth]: updated };
+    });
+  }
+
+  function deleteIncome(sourceId: string) {
+    setMonthlyIncomes((prev) => {
+      const list = prev[selectedMonth] ?? currentIncomes;
+      return { ...prev, [selectedMonth]: list.filter((item) => item.id !== sourceId) };
+    });
+  }
+
   function startEditingEntry(entry: SpendEntry) {
     setEditingEntryId(entry.id);
     setAmount(String(entry.amount));
@@ -551,18 +595,6 @@ export function SafeSpendApp() {
     setShowSpendModal(false);
   }
 
-  function toggleIncomeStatus(sourceId: string) {
-    setMonthlyIncomes((prev) => {
-      const list = prev[selectedMonth] ?? currentIncomes;
-      const updated = list.map((item) =>
-        item.id === sourceId
-          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
-          : item,
-      );
-      return { ...prev, [selectedMonth]: updated };
-    });
-  }
-
   function resetLocalData() {
     setEntries([]);
     setMonthlyIncomes({});
@@ -605,7 +637,7 @@ export function SafeSpendApp() {
 
   return (
     <div className="min-h-screen w-full bg-[#f4f5f7] text-slate-900 font-sans flex flex-col lg:flex-row">
-      {/* PERFECT EXPANDED DESKTOP SIDEBAR WITH CLEAR TEXT TITLES (#D96653 COLOR) */}
+      {/* DESKTOP SIDEBAR WITH CLEAR TEXT TITLES (#D96653 ACCENT) */}
       <aside className="hidden lg:flex flex-col justify-between w-64 bg-white border-r border-slate-200/80 p-5 shrink-0 sticky top-0 h-screen z-40">
         <div className="space-y-6">
           {/* Logo & Brand Header */}
@@ -645,7 +677,7 @@ export function SafeSpendApp() {
           </div>
         </div>
 
-        {/* Bottom Sidebar User & Reset Actions */}
+        {/* Bottom Sidebar Actions */}
         <div className="space-y-3 border-t border-slate-100 pt-4 px-1">
           <div className="flex items-center gap-3">
             <div className="size-9 rounded-full bg-slate-900 text-white flex items-center justify-center text-xs font-black">
@@ -667,9 +699,9 @@ export function SafeSpendApp() {
         </div>
       </aside>
 
-      {/* Main App Workspace (NO TOP NAVBAR DUPLICATION!) */}
+      {/* Main App Workspace */}
       <div className="flex-1 min-w-0 pb-20">
-        {/* Top Header Action Bar (Clean Single Header, No Duplicate Nav Bar) */}
+        {/* Top Header Action Bar */}
         <header className="sticky top-0 z-30 bg-white/95 border-b border-slate-200/70 px-4 py-3 backdrop-blur-md shadow-2xs sm:px-8">
           <div className="mx-auto max-w-6xl flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             {/* Mobile Header Brand & Primary Actions */}
@@ -704,13 +736,20 @@ export function SafeSpendApp() {
               </div>
             </div>
 
-            {/* Quick Spend Primary Action CTA Button */}
+            {/* Action Buttons */}
             <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                className="h-10 px-4 text-xs font-black border-[#D96653] text-[#D96653] hover:bg-orange-50 rounded-full cursor-pointer"
+                onPress={() => setShowAddIncomeModal(true)}
+              >
+                <Plus className="mr-1 size-3.5 text-[#D96653]" /> + Income Source
+              </Button>
               <Button
                 className="h-10 px-5 text-xs font-black bg-[#D96653] hover:bg-[#c05543] text-white rounded-full shadow-sm cursor-pointer"
                 onPress={() => setShowSpendModal(true)}
               >
-                <Plus className="mr-1.5 size-4" /> + Log Spend / Pay
+                <Plus className="mr-1 size-4" /> + Log Spend / Pay
               </Button>
             </div>
           </div>
@@ -857,6 +896,84 @@ export function SafeSpendApp() {
           </div>
         )}
 
+        {/* ADD INCOME SOURCE MODAL OVERLAY */}
+        {showAddIncomeModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
+            <div className="fixed inset-0" onClick={() => setShowAddIncomeModal(false)} />
+            <div className="relative z-10 w-full max-w-md rounded-3xl border border-slate-200 bg-white p-5 sm:p-6 shadow-2xl space-y-4">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 className="text-base font-extrabold text-slate-900 flex items-center gap-2">
+                  <Plus className="size-4 text-emerald-600" /> Add Income Source ({formatMonthLabel(selectedMonth)})
+                </h3>
+                <button
+                  type="button"
+                  className="size-7 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center"
+                  onClick={() => setShowAddIncomeModal(false)}
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
+
+              <form onSubmit={handleAddIncome} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="income-name" className="text-xs font-extrabold text-slate-700 block">Income Source Name</label>
+                  <input
+                    id="income-name"
+                    required
+                    placeholder="e.g. Freelance Client Payment, Performance Bonus..."
+                    value={newIncomeName}
+                    onChange={(e) => setNewIncomeName(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
+                  />
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="income-amount" className="text-xs font-extrabold text-slate-700 block">Amount (₹)</label>
+                  <div className="relative">
+                    <span className="absolute left-3.5 top-2.5 text-sm font-black text-slate-400 font-mono">₹</span>
+                    <input
+                      id="income-amount"
+                      inputMode="numeric"
+                      required
+                      min="1"
+                      placeholder="e.g. 25000"
+                      type="number"
+                      value={newIncomeAmount}
+                      onChange={(e) => setNewIncomeAmount(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 text-sm h-11 pl-8 px-3 font-mono font-black text-slate-900 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653] focus:bg-white"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label htmlFor="income-date" className="text-xs font-extrabold text-slate-700 block">Expected Date / Note</label>
+                  <input
+                    id="income-date"
+                    placeholder="e.g. Day 10 EOD, 15th of the month..."
+                    value={newIncomeDate}
+                    onChange={(e) => setNewIncomeDate(e.target.value)}
+                    className="w-full bg-slate-50 border border-slate-200 text-xs h-10 px-3.5 rounded-2xl focus:outline-none focus:ring-2 focus:ring-[#D96653]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Button className="h-11 flex-1 text-sm font-extrabold bg-emerald-600 text-white rounded-2xl shadow-xs hover:bg-emerald-700" type="submit">
+                    Save Income Source
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-11 border-slate-200 text-slate-700 rounded-2xl font-bold"
+                    onPress={() => setShowAddIncomeModal(false)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
         {/* QUICK SPEND MODAL OVERLAY */}
         {showSpendModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in">
@@ -989,20 +1106,33 @@ export function SafeSpendApp() {
             <div className="space-y-6">
               {/* Top 4 Finexy Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {/* Featured Coral Card: Total Monthly Income */}
+                {/* Featured Coral Card: Total Monthly Income (With Add Income Option) */}
                 <div className="rounded-3xl bg-[#D96653] text-white p-5 shadow-sm space-y-3 relative overflow-hidden flex flex-col justify-between">
                   <div className="flex justify-between items-start">
                     <span className="text-[11px] font-extrabold uppercase tracking-wider text-orange-100">Total Income</span>
-                    <span className="rounded-full bg-white/20 p-1.5 text-white">
-                      <IndianRupee className="size-3.5" />
-                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowAddIncomeModal(true)}
+                      className="rounded-full bg-white/20 hover:bg-white/30 p-1.5 text-white transition-all"
+                      title="Add Income Source"
+                    >
+                      <Plus className="size-3.5" />
+                    </button>
                   </div>
                   <div>
                     <p className="text-3xl font-black font-mono tracking-tight">{formatInr(monthTotalIncome)}</p>
-                    <p className="text-xs font-semibold text-orange-100 mt-1 flex items-center gap-1">
-                      <TrendingUp className="size-3.5 text-white" />
-                      <span>Received: {formatInr(monthIncomeReceived)}</span>
-                    </p>
+                    <div className="flex items-center justify-between mt-1 text-xs font-semibold text-orange-100">
+                      <span className="flex items-center gap-1">
+                        <TrendingUp className="size-3.5 text-white" /> Received: {formatInr(monthIncomeReceived)}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setShowAddIncomeModal(true)}
+                        className="text-[11px] underline font-extrabold hover:text-white"
+                      >
+                        + Add
+                      </button>
+                    </div>
                   </div>
                 </div>
 
@@ -1323,14 +1453,28 @@ export function SafeSpendApp() {
           {/* TAB 2: OVERVIEW & PLAN */}
           {activeTab === "plan" && (
             <div className="space-y-6">
+              {/* Income Sources Management Card (With + Add Income Button & Deletion Support) */}
               <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-5">
-                <h3 className="text-xl font-extrabold text-slate-900">Income Sources for {formatMonthLabel(selectedMonth)}</h3>
-                <div className="space-y-2">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                  <div>
+                    <h3 className="text-xl font-extrabold text-slate-900">Income Sources for {formatMonthLabel(selectedMonth)}</h3>
+                    <p className="text-xs text-slate-400 font-medium">Manage all salary, freelance, bonus, or secondary income streams</p>
+                  </div>
+
+                  <Button
+                    className="h-9 px-4 text-xs font-black bg-emerald-600 hover:bg-emerald-700 text-white rounded-full shadow-xs cursor-pointer"
+                    onPress={() => setShowAddIncomeModal(true)}
+                  >
+                    <Plus className="mr-1 size-3.5" /> Add Income Source
+                  </Button>
+                </div>
+
+                <div className="space-y-2.5">
                   {currentIncomes.map((source) => (
-                    <div key={source.id} className="flex items-center justify-between p-3.5 rounded-2xl border border-slate-200 bg-slate-50">
+                    <div key={source.id} className="flex items-center justify-between p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition-all">
                       <div>
                         <p className="font-extrabold text-slate-900 text-sm">{source.name}</p>
-                        <p className="text-xs text-slate-500">{source.expectedDate}</p>
+                        <p className="text-xs text-slate-500">Expected: <span className="font-semibold text-slate-700">{source.expectedDate}</span></p>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="font-mono text-base font-black text-slate-900">{formatInr(source.amount)}</span>
@@ -1342,6 +1486,19 @@ export function SafeSpendApp() {
                         >
                           {source.status === "received" ? "Received ✓" : "Expected"}
                         </Button>
+
+                        {/* Allow deleting custom non-primary income sources */}
+                        {source.id !== `salary-${selectedMonth}` && source.id !== "sal-oct" && (
+                          <Button
+                            aria-label="Delete income source"
+                            size="sm"
+                            variant="ghost"
+                            className="size-8 p-0 text-slate-400 hover:text-red-600 hover:bg-red-100 rounded-xl min-w-0"
+                            onPress={() => deleteIncome(source.id)}
+                          >
+                            <Trash2 className="size-3.5" />
+                          </Button>
+                        )}
                       </div>
                     </div>
                   ))}
