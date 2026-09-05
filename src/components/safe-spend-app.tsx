@@ -76,6 +76,7 @@ import {
   getCardUsageStatus,
   getInvestmentPlanForMonth,
   generateMonthPreviews,
+  initialSeptemberSpends,
   octoberSeedData,
   sumAmounts,
   CustomDebt,
@@ -123,12 +124,12 @@ const categoryOptions = [
 ];
 
 function loadSpendEntries(): SpendEntry[] {
-  if (typeof window === "undefined") return [];
+  if (typeof window === "undefined") return initialSeptemberSpends;
   try {
     const raw = window.localStorage.getItem(SPEND_STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as SpendEntry[]) : [];
+    return raw && JSON.parse(raw).length > 0 ? (JSON.parse(raw) as SpendEntry[]) : initialSeptemberSpends;
   } catch {
-    return [];
+    return initialSeptemberSpends;
   }
 }
 

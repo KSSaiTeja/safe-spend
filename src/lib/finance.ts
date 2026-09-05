@@ -242,6 +242,19 @@ export const octoberSeedData: MonthlyBudgetData = {
   ],
 };
 
+export const initialSeptemberSpends: SpendEntry[] = [
+  { id: "spend-sep5-envato", date: "2026-09-05", amount: 300, categoryId: "misc", paidBy: "upi", note: "Envato transfer" },
+  { id: "spend-sep5-shampoo", date: "2026-09-05", amount: 312, categoryId: "groceries", paidBy: "axis", cardId: "axis-flipkart", note: "Flipkart Minutes - Sister shampoo" },
+  { id: "spend-sep4-powerbill", date: "2026-09-04", amount: 1349, categoryId: "electricity", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Electricity power bill" },
+  { id: "spend-sep4-milk", date: "2026-09-04", amount: 33, categoryId: "groceries", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Milk packet" },
+  { id: "spend-sep4-namecheap", date: "2026-09-04", amount: 1450, categoryId: "misc", paidBy: "yes-bank", cardId: "yes-uni-gold", note: "Namecheap domain (Reimbursed by client via PhonePe)" },
+  { id: "spend-sep3-instamart", date: "2026-09-03", amount: 343, categoryId: "groceries", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Instamart groceries" },
+  { id: "spend-sep3-noodles", date: "2026-09-03", amount: 120, categoryId: "groceries", paidBy: "cash", note: "Noodles" },
+  { id: "spend-sep3-icecream", date: "2026-09-03", amount: 20, categoryId: "misc", paidBy: "cash", note: "Ice cream" },
+  { id: "spend-sep2-ac", date: "2026-09-02", amount: 3000, categoryId: "misc", paidBy: "upi", note: "AC installation & miscellaneous" },
+  { id: "spend-sep1-water", date: "2026-09-01", amount: 10, categoryId: "groceries", paidBy: "cash", note: "Water tin" },
+];
+
 export type FactualBankCardGroup = {
   bankName: string;
   sharedLimit: number;
