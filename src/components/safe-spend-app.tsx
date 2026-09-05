@@ -574,14 +574,50 @@ export function SafeSpendApp() {
   const variableCategoryIds = new Set(
     octoberSeedData.expenses.filter((expense) => expense.kind === "variable").map((expense) => expense.id),
   );
-  const variableSpent = entries
-    .filter((entry) => variableCategoryIds.has(entry.categoryId))
-    .reduce((total, entry) => total + entry.amount, 0);
+
+  const reimbursedSpent = useMemo(
+    () =>
+      entries
+        .filter((entry) => entry.isReimbursed || entry.note?.toLowerCase().includes("reimbursed"))
+        .reduce((total, entry) => total + entry.amount, 0),
+    [entries],
+  );
+
+  const oneTimeSpent = useMemo(
+    () =>
+      entries
+        .filter((entry) => entry.isOneTime || entry.note?.toLowerCase().includes("installation"))
+        .reduce((total, entry) => total + entry.amount, 0),
+    [entries],
+  );
+
+  // Total variable personal spent (excluding client reimbursed items)
+  const variableSpent = useMemo(
+    () =>
+      entries
+        .filter(
+          (entry) =>
+            variableCategoryIds.has(entry.categoryId) &&
+            !entry.isReimbursed &&
+            !entry.note?.toLowerCase().includes("reimbursed"),
+        )
+        .reduce((total, entry) => total + entry.amount, 0),
+    [entries, variableCategoryIds],
+  );
+
+  // Routine daily variable spent (excluding both client reimbursed & one-time room setup costs)
+  const routineVariableSpent = useMemo(
+    () => Math.max(0, variableSpent - oneTimeSpent),
+    [variableSpent, oneTimeSpent],
+  );
+
   const dayOfMonth = getSeptemberDay();
   const variableBudget = 9000;
+
+  // Use routine daily spending for accurate daily pace warning
   const pace = calculateSafeSpendPace({
     monthlyVariableBudget: variableBudget,
-    spentSoFar: variableSpent,
+    spentSoFar: routineVariableSpent,
     dayOfMonth,
     daysInMonth: 30,
   });
@@ -1559,6 +1595,11 @@ export function SafeSpendApp() {
                                         <IconComponent className="size-3.5" />
                                       </div>
                                       <span className="font-extrabold text-slate-900">{displayName}</span>
+                                      {(entry.isReimbursed || entry.note?.toLowerCase().includes("reimbursed")) && (
+                                        <span className="ml-1.5 px-2 py-0.5 text-[9px] font-black text-emerald-700 bg-emerald-100 rounded-full">
+                                          Reimbursed
+                                        </span>
+                                      )}
                                     </div>
                                   </td>
                                   <td className="py-3 text-slate-600 font-medium">
@@ -1673,13 +1714,18 @@ export function SafeSpendApp() {
 
                     <div className="space-y-3 pt-1">
                       <div>
-                        <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
-                          <span>Variable Spend ({dayOfMonth}/30 days)</span>
+                        <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-800">
+                          <span>Personal Variable ({dayOfMonth}/30 days)</span>
                           <span className="font-mono font-black text-slate-900">
                             {formatInr(variableSpent)} / {formatInr(variableBudget)}
                           </span>
                         </div>
                         <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
+                        {reimbursedSpent > 0 && (
+                          <p className="mt-1.5 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
+                            ✓ Excludes {formatInr(reimbursedSpent)} client reimbursement (PhonePe)
+                          </p>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
@@ -1688,8 +1734,8 @@ export function SafeSpendApp() {
                           <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
                         </div>
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
-                          <p className="text-slate-500 font-bold">Projected End</p>
-                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.projectedMonthEnd)}</p>
+                          <p className="text-slate-500 font-bold">Routine Pace End</p>
+                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(routineVariableSpent > 0 ? Math.round((routineVariableSpent / dayOfMonth) * 30) + oneTimeSpent : variableSpent)}</p>
                         </div>
                       </div>
                     </div>
