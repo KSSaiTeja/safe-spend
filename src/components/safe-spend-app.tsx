@@ -1710,39 +1710,43 @@ export function SafeSpendApp() {
                     </button>
                   </div>
 
-                  {/* Budget Pace Widget */}
+                  {/* Budget Pace Widget - Crystal Clear & Unconfusing */}
                   <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between">
-                      <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
+                      <div>
+                        <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
+                        <p className="text-[11px] font-semibold text-slate-400">Daily Target: ₹300 / day</p>
+                      </div>
                       <Chip color={pace.status === "green" ? "success" : pace.status === "yellow" ? "warning" : "danger"} size="sm" variant="soft">
                         {pace.status === "green" ? "Safe Zone" : "Warning"}
                       </Chip>
                     </div>
-                    <p className="text-xs font-medium text-slate-500">{pace.message}</p>
 
                     <div className="space-y-4 pt-1">
+                      {/* Routine Daily Spends vs Allowed Limit Up To Today */}
                       <div>
                         <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
-                          <span>Personal Variable Budget (Day {dayOfMonth}/30)</span>
+                          <span>Routine Daily Spends (Day {dayOfMonth}/30)</span>
                           <span className="font-mono font-black text-slate-900">
-                            {formatInr(variableSpent)} / {formatInr(variableBudget)}
+                            {formatInr(routineVariableSpent)} / {formatInr(pace.allowedByToday)}
                           </span>
                         </div>
-                        <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2.5" />
+                        <ProgressBar value={Math.min(100, (routineVariableSpent / pace.allowedByToday) * 100)} className="h-2.5" />
+                        <p className="mt-2 text-[11px] font-semibold text-slate-500 flex items-center justify-between">
+                          <span>5-Day Allowed: {formatInr(pace.allowedByToday)}</span>
+                          <span className="text-emerald-600 font-extrabold">+{formatInr(Math.max(0, pace.allowedByToday - routineVariableSpent))} Buffer Left</span>
+                        </p>
                       </div>
 
-                      <div className="grid grid-cols-3 gap-2.5 text-center text-xs pt-1">
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
-                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Daily Rate</p>
-                          <p className="mt-1 font-mono text-sm font-black text-slate-900">₹300<span className="text-[10px] text-slate-400 font-semibold">/day</span></p>
+                      {/* 2 Clear Summary Cards */}
+                      <div className="grid grid-cols-2 gap-3 text-center text-xs pt-1">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
+                          <p className="text-slate-500 font-bold text-[11px]">Daily Target</p>
+                          <p className="mt-1 font-mono text-base font-black text-slate-900">₹300 <span className="text-xs font-medium text-slate-400">/day</span></p>
                         </div>
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
-                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Allowed (Day {dayOfMonth})</p>
-                          <p className="mt-1 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
-                        </div>
-                        <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200/60 p-2.5">
-                          <p className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider">Safe Buffer</p>
-                          <p className="mt-1 font-mono text-sm font-black text-emerald-700">+{formatInr(Math.max(0, pace.allowedByToday - routineVariableSpent))}</p>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
+                          <p className="text-slate-500 font-bold text-[11px]">Remaining in ₹9k Pool</p>
+                          <p className="mt-1 font-mono text-base font-black text-emerald-600">{formatInr(Math.max(0, variableBudget - variableSpent))}</p>
                         </div>
                       </div>
                     </div>
