@@ -262,7 +262,7 @@ export function SafeSpendApp() {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
 
-  // Initial cloud database sync if Supabase environment variables are provided
+  // Initial cloud database sync for spends and incomes
   useEffect(() => {
     if (isSupabaseConfigured) {
       fetchSpendsFromDb().then((dbSpends) => {
@@ -272,6 +272,19 @@ export function SafeSpendApp() {
       });
     }
   }, []);
+
+  useEffect(() => {
+    if (isSupabaseConfigured) {
+      fetchIncomesFromDb(selectedMonth).then((dbIncomes) => {
+        if (dbIncomes && dbIncomes.length > 0) {
+          setMonthlyIncomes((prev) => ({
+            ...prev,
+            [selectedMonth]: dbIncomes,
+          }));
+        }
+      });
+    }
+  }, [selectedMonth]);
 
   // Dynamically auto-assign default card when switching payment method to a card
   useEffect(() => {
@@ -612,20 +625,20 @@ export function SafeSpendApp() {
     if (!newIncomeName.trim() || !Number.isFinite(parsed) || parsed <= 0) return;
 
     if (editingIncomeId) {
+      const existingItem = (monthlyIncomes[selectedMonth] ?? currentIncomes).find((i) => i.id === editingIncomeId);
+      const updatedSource: IncomeSource = {
+        id: editingIncomeId,
+        name: newIncomeName.trim(),
+        amount: Math.round(parsed),
+        expectedDate: newIncomeDate.trim() || "Expected this month",
+        status: existingItem?.status || "expected",
+      };
       setMonthlyIncomes((prev) => {
         const list = prev[selectedMonth] ?? currentIncomes;
-        const updated = list.map((item) =>
-          item.id === editingIncomeId
-            ? {
-                ...item,
-                name: newIncomeName.trim(),
-                amount: Math.round(parsed),
-                expectedDate: newIncomeDate.trim() || "Expected this month",
-              }
-            : item,
-        );
+        const updated = list.map((item) => (item.id === editingIncomeId ? updatedSource : item));
         return { ...prev, [selectedMonth]: updated };
       });
+      saveIncomeToDb(updatedSource, selectedMonth);
       setEditingIncomeId(null);
     } else {
       const newSource: IncomeSource = {
@@ -640,6 +653,7 @@ export function SafeSpendApp() {
         ...prev,
         [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
       }));
+      saveIncomeToDb(newSource, selectedMonth);
     }
 
     setNewIncomeName("");
@@ -651,11 +665,17 @@ export function SafeSpendApp() {
   function toggleIncomeStatus(sourceId: string) {
     setMonthlyIncomes((prev) => {
       const list = prev[selectedMonth] ?? currentIncomes;
-      const updated = list.map((item) =>
-        item.id === sourceId
-          ? { ...item, status: item.status === "received" ? ("expected" as const) : ("received" as const) }
-          : item,
-      );
+      const updated = list.map((item) => {
+        if (item.id === sourceId) {
+          const nextItem: IncomeSource = {
+            ...item,
+            status: item.status === "received" ? "expected" : "received",
+          };
+          saveIncomeToDb(nextItem, selectedMonth);
+          return nextItem;
+        }
+        return item;
+      });
       return { ...prev, [selectedMonth]: updated };
     });
   }
@@ -665,6 +685,7 @@ export function SafeSpendApp() {
       const list = prev[selectedMonth] ?? currentIncomes;
       return { ...prev, [selectedMonth]: list.filter((item) => item.id !== sourceId) };
     });
+    deleteIncomeFromDb(sourceId);
   }
 
   function startEditingEntry(entry: SpendEntry) {
