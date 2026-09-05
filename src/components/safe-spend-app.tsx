@@ -1555,77 +1555,85 @@ export function SafeSpendApp() {
                     </div>
 
                     <div className="overflow-x-auto">
-                      <table className="w-full text-left text-xs">
+                      <table className="w-full text-left text-xs border-collapse">
                         <thead>
-                          <tr className="border-b border-slate-100 text-slate-400 font-extrabold pb-2">
-                            <th className="pb-2">ID</th>
-                            <th className="pb-2">Activity / Note</th>
-                            <th className="pb-2">Method & Card</th>
-                            <th className="pb-2">Amount</th>
-                            <th className="pb-2">Status</th>
-                            <th className="pb-2">Date</th>
-                            <th className="pb-2 pr-2 text-right">Actions</th>
+                          <tr className="border-b border-slate-100 text-slate-400 font-extrabold uppercase text-[10px] tracking-wider">
+                            <th className="py-3 px-3">Transaction</th>
+                            <th className="py-3 px-3">Payment Method</th>
+                            <th className="py-3 px-3 text-right">Amount</th>
+                            <th className="py-3 px-3">Date</th>
+                            <th className="py-3 px-3 text-right">Actions</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-100">
+                        <tbody className="divide-y divide-slate-100/80">
                           {filteredEntries.length === 0 ? (
                             <tr>
-                              <td colSpan={7} className="py-8 text-center text-slate-400 font-medium">
+                              <td colSpan={5} className="py-10 text-center text-slate-400 font-medium">
                                 No logged spends found. Tap "+ Log Spend" to record transaction.
                               </td>
                             </tr>
                           ) : (
-                            filteredEntries.slice(0, 12).map((entry, idx) => {
+                            filteredEntries.slice(0, 15).map((entry) => {
                               const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
                               const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
                               const methodLabel = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
                               const matchedCard = allFactualCreditCards.find((c) => c.id === entry.cardId);
-                              const displayName = entry.note || debtCategory?.name || category?.name || "Spend";
-                              const orderId = `INV_00${80 - idx}`;
+                              const rawNote = entry.note || debtCategory?.name || category?.name || "Spend";
+                              const isReimbursed = entry.isReimbursed || rawNote.toLowerCase().includes("reimbursed");
+                              
+                              // Clean display title
+                              const cleanTitle = rawNote.split(" (Reimbursed")[0].trim();
 
                               const iconObj = categoryOptions.find((c) => c.id === entry.categoryId);
                               const IconComponent = iconObj?.icon || Wallet;
 
                               return (
-                                <tr key={entry.id} className="hover:bg-slate-50/80 transition-all font-semibold">
-                                  <td className="py-3 font-mono font-bold text-slate-400 text-[11px]">{orderId}</td>
-                                  <td className="py-3">
-                                    <div className="flex items-center gap-2.5">
-                                      <div className={cn("size-7 rounded-lg flex items-center justify-center shrink-0", iconObj?.color || "bg-sky-50 text-sky-600")}>
-                                        <IconComponent className="size-3.5" />
+                                <tr key={entry.id} className="hover:bg-slate-50/80 transition-all font-semibold group">
+                                  <td className="py-4 px-3">
+                                    <div className="flex items-center gap-3">
+                                      <div className={cn("size-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs", iconObj?.color || "bg-sky-50 text-sky-600")}>
+                                        <IconComponent className="size-4" />
                                       </div>
-                                      <span className="font-extrabold text-slate-900">{displayName}</span>
-                                      {(entry.isReimbursed || entry.note?.toLowerCase().includes("reimbursed")) && (
-                                        <span className="ml-1.5 px-2 py-0.5 text-[9px] font-black text-emerald-700 bg-emerald-100 rounded-full">
-                                          Reimbursed
-                                        </span>
-                                      )}
+                                      <div>
+                                        <div className="flex items-center gap-2">
+                                          <span className="font-extrabold text-slate-900 text-sm">{cleanTitle}</span>
+                                          {isReimbursed && (
+                                            <span className="px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 rounded-full shrink-0">
+                                              Reimbursed
+                                            </span>
+                                          )}
+                                        </div>
+                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">{category?.name || "Expense"}</p>
+                                      </div>
                                     </div>
                                   </td>
-                                  <td className="py-3 text-slate-600 font-medium">
-                                    <div className="flex flex-col">
-                                      <span>{methodLabel}</span>
+
+                                  <td className="py-4 px-3 text-slate-600 font-medium">
+                                    <div className="flex flex-col gap-0.5">
+                                      <span className="font-bold text-slate-700">{methodLabel}</span>
                                       {matchedCard && (
-                                        <span className="text-[10px] text-[#D96653] font-bold">
+                                        <span className="text-[11px] text-[#D96653] font-bold">
                                           💳 {matchedCard.name.replace("Axis Bank ", "").replace("HDFC ", "")}
                                         </span>
                                       )}
                                     </div>
                                   </td>
-                                  <td className="py-3 font-mono font-black text-slate-900">{formatInr(entry.amount)}</td>
-                                  <td className="py-3">
-                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold text-emerald-600 bg-emerald-50">
-                                      <span className="size-1.5 rounded-full bg-emerald-500" /> Completed
-                                    </span>
+
+                                  <td className="py-4 px-3 text-right">
+                                    <span className="font-mono text-sm font-black text-slate-900">{formatInr(entry.amount)}</span>
                                   </td>
-                                  <td className="py-3 text-slate-500 font-mono text-[11px]">{entry.date}</td>
-                                  <td className="py-3 pr-2 text-right">
-                                    <div className="flex items-center justify-end gap-1">
+
+                                  <td className="py-4 px-3 text-slate-500 font-medium text-[11px] whitespace-nowrap">
+                                    {formatDateFormatted(entry.date)}
+                                  </td>
+
+                                  <td className="py-4 px-3 text-right">
+                                    <div className="flex items-center justify-end gap-1 opacity-80 group-hover:opacity-100 transition-opacity">
                                       <button
                                         type="button"
                                         title="Edit transaction"
                                         onClick={() => startEditingEntry(entry)}
-                                        className="p-1.5 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
+                                        className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition-all"
                                       >
                                         <Pencil className="size-3.5" />
                                       </button>
@@ -1633,7 +1641,7 @@ export function SafeSpendApp() {
                                         type="button"
                                         title="Delete transaction"
                                         onClick={() => deleteSpendEntry(entry.id)}
-                                        className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all"
+                                        className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all"
                                       >
                                         <Trash2 className="size-3.5" />
                                       </button>
@@ -1703,39 +1711,34 @@ export function SafeSpendApp() {
                   </div>
 
                   {/* Budget Pace Widget */}
-                  <div className="rounded-3xl bg-white border border-slate-200/70 p-5 shadow-2xs space-y-4">
+                  <div className="rounded-3xl bg-white border border-slate-200/70 p-6 shadow-2xs space-y-4">
                     <div className="flex items-center justify-between">
                       <h3 className="text-base font-extrabold text-slate-900">Safe Spend Pace</h3>
                       <Chip color={pace.status === "green" ? "success" : pace.status === "yellow" ? "warning" : "danger"} size="sm" variant="soft">
-                        {pace.status === "green" ? "Safe" : "Warning"}
+                        {pace.status === "green" ? "Safe Zone" : "Warning"}
                       </Chip>
                     </div>
                     <p className="text-xs font-medium text-slate-500">{pace.message}</p>
 
-                    <div className="space-y-3 pt-1">
+                    <div className="space-y-4 pt-1">
                       <div>
-                        <div className="mb-1 flex items-center justify-between text-xs font-bold text-slate-800">
-                          <span>Personal Variable ({dayOfMonth}/30 days)</span>
+                        <div className="mb-2 flex items-center justify-between text-xs font-bold text-slate-800">
+                          <span>Personal Variable Budget (Day {dayOfMonth}/30)</span>
                           <span className="font-mono font-black text-slate-900">
                             {formatInr(variableSpent)} / {formatInr(variableBudget)}
                           </span>
                         </div>
-                        <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2" />
-                        {reimbursedSpent > 0 && (
-                          <p className="mt-1.5 text-[10px] font-extrabold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full inline-block">
-                            ✓ Excludes {formatInr(reimbursedSpent)} client reimbursement (PhonePe)
-                          </p>
-                        )}
+                        <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2.5" />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-2 text-center text-xs pt-1">
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                      <div className="grid grid-cols-2 gap-3 text-center text-xs pt-1">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
                           <p className="text-slate-500 font-bold">Allowed Today</p>
-                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                          <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
                         </div>
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
-                          <p className="text-slate-500 font-bold">Routine Pace End</p>
-                          <p className="mt-0.5 font-mono text-sm font-black text-slate-900">{formatInr(routineVariableSpent > 0 ? Math.round((routineVariableSpent / dayOfMonth) * 30) + oneTimeSpent : variableSpent)}</p>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
+                          <p className="text-slate-500 font-bold">Projected Month End</p>
+                          <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(routineVariableSpent > 0 ? Math.round((routineVariableSpent / dayOfMonth) * 30) + oneTimeSpent : variableSpent)}</p>
                         </div>
                       </div>
                     </div>
