@@ -1741,9 +1741,9 @@ export function SafeSpendApp() {
                       {/* 2 Clear Summary Cards */}
                       <div className="grid grid-cols-2 gap-3 text-center text-xs pt-1">
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
-                          <p className="text-slate-500 font-bold text-[11px]">Pace for Next 25 Days</p>
+                          <p className="text-slate-500 font-bold text-[11px]">Pace for Next {Math.max(1, 30 - dayOfMonth)} Days</p>
                           <p className="mt-1 font-mono text-base font-black text-slate-900">
-                            {formatInr(Math.floor((variableBudget - variableSpent) / (30 - dayOfMonth)))} <span className="text-xs font-medium text-slate-400">/day</span>
+                            {formatInr(Math.floor(Math.max(0, variableBudget - variableSpent) / Math.max(1, 30 - dayOfMonth)))} <span className="text-xs font-medium text-slate-400">/day</span>
                           </p>
                         </div>
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
