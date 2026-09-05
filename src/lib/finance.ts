@@ -276,23 +276,23 @@ export const factualBankCardGroups: FactualBankCardGroup[] = [
   {
     bankName: "Axis Bank Cards Group",
     sharedLimit: 15000,
-    totalOutstandingSpend: 10345.60,
+    totalOutstandingSpend: 13144.80,
     colorTheme: "bg-[#800020] text-white",
     cardImage: "/images/axis_card.jpg",
     cards: [
-      { id: "axis-indianoil", name: "Axis Bank Indian Oil", brandTag: "Indian Oil Fuel (....7380)", spendAmount: 5310.40, sinceDate: "20 Aug" },
+      { id: "axis-indianoil", name: "Axis Bank Indian Oil", brandTag: "Indian Oil Fuel (....7380)", spendAmount: 7887.40, sinceDate: "20 Aug" },
       { id: "axis-flipkart", name: "Axis Bank Flipkart", brandTag: "Flipkart Co-Branded (....9691)", spendAmount: 4688.00, sinceDate: "14 Aug" },
-      { id: "axis-myzone", name: "Axis Bank MyZone", brandTag: "MyZone Rewards (....6415)", spendAmount: 347.20, sinceDate: "15 Aug" },
+      { id: "axis-myzone", name: "Axis Bank MyZone", brandTag: "MyZone Rewards (....6415)", spendAmount: 569.40, sinceDate: "15 Aug" },
     ],
   },
   {
     bankName: "HDFC Bank Cards Group",
     sharedLimit: 40000,
-    totalOutstandingSpend: 10601.11,
+    totalOutstandingSpend: 12638.87,
     colorTheme: "bg-[#0A2540] text-white",
     cardImage: "/images/hdfc_card.jpg",
     cards: [
-      { id: "hdfc-phonepe", name: "HDFC PhonePe / PayZapp", brandTag: "PhonePe Cashbacks (....8020)", spendAmount: 10601.11, sinceDate: "12 Aug" },
+      { id: "hdfc-phonepe", name: "HDFC PhonePe / PayZapp", brandTag: "PhonePe Cashbacks (....8020)", spendAmount: 12638.87, sinceDate: "12 Aug" },
       { id: "hdfc-tataneu", name: "Tata Neu HDFC Card", brandTag: "Tata Neu Plus (....7192)", spendAmount: 0.00, sinceDate: "11 Aug" },
       { id: "hdfc-rupay", name: "HDFC RuPay Credit Card", brandTag: "UPI RuPay Link (....6666)", spendAmount: 0.00, sinceDate: "12 Aug" },
     ],
@@ -300,12 +300,12 @@ export const factualBankCardGroups: FactualBankCardGroup[] = [
   {
     bankName: "YES Bank (Uni Cards Group)",
     sharedLimit: 27000,
-    totalOutstandingSpend: 1640.00,
+    totalOutstandingSpend: 3054.15,
     colorTheme: "bg-[#0077B6] text-white",
     cardImage: "/images/uni_card.jpg",
     cards: [
       { id: "yes-uni-gold", name: "Uni X Gold (YES Bank)", brandTag: "Uni Gold Edition (....0976)", spendAmount: 1640.00, sinceDate: "12 Aug" },
-      { id: "yes-uni-rupay", name: "Uni RuPay Card (YES Bank)", brandTag: "Uni RuPay UPI (....5456)", spendAmount: 0.00, sinceDate: "12 Aug" },
+      { id: "yes-uni-rupay", name: "Uni RuPay Card (YES Bank)", brandTag: "Uni RuPay UPI (....5456)", spendAmount: 1414.15, sinceDate: "12 Aug" },
     ],
   },
 ];
