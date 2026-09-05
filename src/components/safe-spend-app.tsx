@@ -1731,14 +1731,18 @@ export function SafeSpendApp() {
                         <ProgressBar value={Math.min(100, (variableSpent / variableBudget) * 100)} className="h-2.5" />
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 text-center text-xs pt-1">
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
-                          <p className="text-slate-500 font-bold">Allowed Today</p>
-                          <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                      <div className="grid grid-cols-3 gap-2.5 text-center text-xs pt-1">
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Daily Rate</p>
+                          <p className="mt-1 font-mono text-sm font-black text-slate-900">₹300<span className="text-[10px] text-slate-400 font-semibold">/day</span></p>
                         </div>
-                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
-                          <p className="text-slate-500 font-bold">Projected Month End</p>
-                          <p className="mt-1 font-mono text-base font-black text-slate-900">{formatInr(routineVariableSpent > 0 ? Math.round((routineVariableSpent / dayOfMonth) * 30) + oneTimeSpent : variableSpent)}</p>
+                        <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-2.5">
+                          <p className="text-slate-500 font-bold text-[10px] uppercase tracking-wider">Allowed (Day {dayOfMonth})</p>
+                          <p className="mt-1 font-mono text-sm font-black text-slate-900">{formatInr(pace.allowedByToday)}</p>
+                        </div>
+                        <div className="rounded-2xl bg-emerald-50/80 border border-emerald-200/60 p-2.5">
+                          <p className="text-emerald-700 font-bold text-[10px] uppercase tracking-wider">Safe Buffer</p>
+                          <p className="mt-1 font-mono text-sm font-black text-emerald-700">+{formatInr(Math.max(0, pace.allowedByToday - routineVariableSpent))}</p>
                         </div>
                       </div>
                     </div>
