@@ -274,20 +274,33 @@ export function SafeSpendApp() {
     window.localStorage.setItem(BUFFER_SWEEP_KEY, JSON.stringify(bufferSweeps));
   }, [bufferSweeps]);
 
-  // Initial cloud database sync for spends and incomes
+  // Initial & Live cloud database sync for spends
   useEffect(() => {
-    fetch("/api/spends")
-      .then((res) => res.json())
-      .then((data) => {
-        if (data?.spends && Array.isArray(data.spends) && data.spends.length > 0) {
-          setEntries((prev) => {
-            const serverIds = new Set(data.spends.map((s: SpendEntry) => s.id));
-            const userAddedLocal = prev.filter((p) => !serverIds.has(p.id) && !p.id.startsWith("spend-sep"));
-            return [...data.spends, ...userAddedLocal];
-          });
-        }
-      })
-      .catch((err) => console.error("Failed to fetch /api/spends:", err));
+    const syncSpends = () => {
+      fetch("/api/spends")
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.spends && Array.isArray(data.spends) && data.spends.length > 0) {
+            setEntries((prev) => {
+              const serverIds = new Set(data.spends.map((s: SpendEntry) => s.id));
+              const userAddedLocal = prev.filter((p) => !serverIds.has(p.id) && !p.id.startsWith("spend-sep"));
+              return [...data.spends, ...userAddedLocal];
+            });
+          }
+        })
+        .catch((err) => console.error("Failed to fetch /api/spends:", err));
+    };
+
+    syncSpends();
+
+    // Live auto-polling every 6 seconds for zero-lag background updates
+    const interval = setInterval(syncSpends, 6000);
+    window.addEventListener("focus", syncSpends);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", syncSpends);
+    };
   }, []);
 
   useEffect(() => {

@@ -89,3 +89,16 @@ describe("October Safe Spend logic", () => {
     expect(getCardUsageStatus({ name: "YES Bank", limit: 27000, available: 25061 }).status).toBe("safe-but-dont-use");
   });
 });
+
+describe("Bank SMS Auto-Parsing", () => {
+  it("correctly parses HDFC credit card SMS alerts", async () => {
+    const { parseBankSms } = await import("../app/api/spends/auto-log/route");
+    const parsed = parseBankSms("Rs 370.00 debited from HDFC Bank Card ending 8020 on 08-SEP-26 to CHICKEN SHOP via UPI");
+    expect(parsed).not.toBeNull();
+    expect(parsed?.amount).toBe(370);
+    expect(parsed?.paidBy).toBe("hdfc");
+    expect(parsed?.cardId).toBe("hdfc-phonepe");
+    expect(parsed?.categoryId).toBe("groceries");
+  });
+});
+
