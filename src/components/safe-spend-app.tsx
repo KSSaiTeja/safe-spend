@@ -2200,6 +2200,41 @@ export function SafeSpendApp() {
           )}
         </div>
       </div>
+
+      {/* Mobile Fixed Bottom Quick Dock (< lg) */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 border-t border-slate-200/80 backdrop-blur-md px-2 py-1.5 shadow-lg flex items-center justify-around">
+        {navItems.slice(0, 4).map((item) => {
+          const Icon = item.icon;
+          const isActive = activeTab === item.id;
+          return (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveTab(item.id)}
+              className={cn(
+                "flex flex-col items-center gap-0.5 px-2 py-1 rounded-xl transition-all cursor-pointer",
+                isActive ? "text-[#D96653] font-black" : "text-slate-500 font-medium hover:text-slate-900",
+              )}
+            >
+              <Icon className="size-4" />
+              <span className="text-[9px] tracking-tight whitespace-nowrap">{item.label.split(" ")[0]}</span>
+            </button>
+          );
+        })}
+        <button
+          type="button"
+          onClick={() => {
+            setEditingEntryId(null);
+            setAmount("");
+            setNote("");
+            setShowSpendModal(true);
+          }}
+          className="flex flex-col items-center gap-0.5 px-3 py-1 rounded-2xl bg-[#D96653] text-white shadow-md active:scale-95 transition-all cursor-pointer"
+        >
+          <Plus className="size-4" />
+          <span className="text-[9px] font-black">+ Spend</span>
+        </button>
+      </div>
     </div>
   );
 }
