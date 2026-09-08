@@ -769,9 +769,9 @@ export function SafeSpendApp() {
 
   function deleteSpendEntry(entryId: string) {
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
-    if (isSupabaseConfigured) {
-      deleteSpendFromDb(entryId);
-    }
+    fetch(`/api/spends?id=${encodeURIComponent(entryId)}`, { method: "DELETE" }).catch((err) =>
+      console.error("Failed to delete spend from server DB:", err),
+    );
   }
 
   function addSpend(event: FormEvent<HTMLFormElement>) {
@@ -1642,8 +1642,8 @@ export function SafeSpendApp() {
                                               <ArrowDownLeft className="size-3 text-emerald-600" /> Credit / Refund
                                             </span>
                                           ) : (
-                                            <span className="px-2 py-0.5 text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full shrink-0">
-                                              Debit
+                                            <span className="px-2 py-0.5 text-[10px] font-bold text-rose-700 bg-rose-50 border border-rose-200/60 rounded-full shrink-0 flex items-center gap-0.5">
+                                              <ArrowUpRight className="size-3 text-rose-500" /> Debit
                                             </span>
                                           )}
                                         </div>
@@ -1664,7 +1664,7 @@ export function SafeSpendApp() {
                                   </td>
 
                                   <td className="py-4 px-3 text-right">
-                                    <span className={cn("font-mono text-sm font-black", isCredit ? "text-emerald-600" : "text-slate-900")}>
+                                    <span className={cn("font-mono text-sm font-black", isCredit ? "text-emerald-600" : "text-rose-600")}>
                                       {isCredit ? `+ ${formatInr(entry.amount)}` : `- ${formatInr(entry.amount)}`}
                                     </span>
                                   </td>
