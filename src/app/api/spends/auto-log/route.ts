@@ -10,10 +10,11 @@ export type AutoParsedSpend = {
   date: string;
   note: string;
   rawMessage: string;
+  isCredit?: boolean;
 };
 
 /**
- * Parses Indian Bank SMS / Notification text for automated spend logging.
+ * Parses Indian Bank SMS / Notification text for automated spend AND credit logging.
  * Robustly parses HDFC, Axis, YES Bank, Uni, SBI, ICICI, PhonePe, Paytm, GPay, etc.
  */
 export function parseBankSms(text: string): AutoParsedSpend | null {
@@ -21,8 +22,16 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
 
   const lower = text.toLowerCase();
 
-  // Ignore non-debit / non-spend messages (e.g. OTP, balance enquiry, promotional)
-  const isTransaction =
+  // Determine if transaction is a Credit or a Debit
+  const isCredit =
+    lower.includes("credited") ||
+    lower.includes("received") ||
+    lower.includes("refund") ||
+    lower.includes("cashback") ||
+    lower.includes("added") ||
+    lower.includes("deposited");
+
+  const isDebit =
     lower.includes("debited") ||
     lower.includes("spent") ||
     lower.includes("paid") ||
@@ -33,22 +42,22 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
     lower.includes("transfer") ||
     lower.includes("info");
 
-  if (!isTransaction) return null;
+  if (!isCredit && !isDebit) return null;
 
-  // 1. Extract Amount (e.g. "Rs 250.00", "INR 1,500", "debited by 450", "Spent Rs.370")
+  // 1. Extract Amount (e.g. "Rs 250.00", "INR 1,500", "debited by 450", "Spent Rs.370", "credited with 1000")
   const amountMatch =
-    text.match(/(?:rs\.?|inr|debited by|spent|paid|vpa|amt|amount)\s*[:\s]*([0-9,]+(?:\.[0-9]{1,2})?)/i) ||
-    text.match(/([0-9,]+(?:\.[0-9]{1,2})?)\s*(?:debited|spent|paid)/i);
+    text.match(/(?:rs\.?|inr|debited by|credited with|credited|spent|paid|vpa|amt|amount)\s*[:\s]*([0-9,]+(?:\.[0-9]{1,2})?)/i) ||
+    text.match(/([0-9,]+(?:\.[0-9]{1,2})?)\s*(?:debited|credited|spent|paid|received)/i);
 
   if (!amountMatch) return null;
   const rawAmountStr = amountMatch[1].replace(/,/g, "");
   const amount = Math.round(Number(rawAmountStr));
   if (!Number.isFinite(amount) || amount <= 0) return null;
 
-  // 2. Extract Payee / Vendor
-  let payee = "Bank Transaction";
+  // 2. Extract Payee / Sender
+  let payee = isCredit ? "Credit / Refund Received" : "Bank Transaction";
   const payeeMatch =
-    text.match(/(?:to|at|vpa|info|vendor|trf to)\s+([A-Za-z0-9\s._-]+?)(?:\s+via|\s+on|\s+ref|\s+avail|\s+card|\.|\$|$)/i);
+    text.match(/(?:to|at|from|vpa|info|vendor|trf to|by)\s+([A-Za-z0-9\s._-]+?)(?:\s+via|\s+on|\s+ref|\s+avail|\s+card|\.|\$|$)/i);
   if (payeeMatch && payeeMatch[1].trim()) {
     payee = payeeMatch[1].trim();
   }
@@ -136,8 +145,9 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
     cardId,
     categoryId,
     date: dateStr,
-    note: `Auto-logged: ${payee}`,
+    note: isCredit ? `[Credit Received] ${payee}` : `Auto-logged: ${payee}`,
     rawMessage: text,
+    isCredit,
   };
 }
 
@@ -174,6 +184,7 @@ export async function POST(request: Request) {
       paidBy: parsed.paidBy,
       cardId: parsed.cardId,
       note: parsed.note,
+      isReimbursed: parsed.isCredit ? true : undefined,
     };
 
     // Save to PostgreSQL database
@@ -181,7 +192,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      message: `Successfully parsed and logged transaction of ₹${parsed.amount} to ${parsed.payee}`,
+      message: `Successfully parsed and logged ${parsed.isCredit ? "credit" : "debit"} transaction of ₹${parsed.amount} ${parsed.isCredit ? "from" : "to"} ${parsed.payee}`,
       entry: newEntry,
       parsedData: parsed,
     });
@@ -200,9 +211,9 @@ export async function GET() {
   return NextResponse.json({
     status: "active",
     endpoint: "/api/spends/auto-log",
-    description: "SafeSpend Live Webhook for iPhone Shortcuts & Bank Transaction Auto-Logging",
+    description: "SafeSpend Live Webhook for iPhone Shortcuts & Bank Transaction Auto-Logging (Debits & Credits)",
     samplePayload: {
-      message: "Rs 370.00 debited from A/C ...8020 on 08-SEP-26 to CHICKEN SHOP via UPI",
+      message: "Rs 500.00 credited to A/C ...8020 on 08-SEP-26 from CLIENT via UPI",
     },
   });
 }

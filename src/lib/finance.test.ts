@@ -100,5 +100,15 @@ describe("Bank SMS Auto-Parsing", () => {
     expect(parsed?.cardId).toBe("hdfc-phonepe");
     expect(parsed?.categoryId).toBe("groceries");
   });
+
+  it("correctly parses credit & refund SMS alerts", async () => {
+    const { parseBankSms } = await import("../app/api/spends/auto-log/route");
+    const parsed = parseBankSms("Rs 1500.00 credited to A/C ...8020 on 08-SEP-26 from Client via UPI");
+    expect(parsed).not.toBeNull();
+    expect(parsed?.amount).toBe(1500);
+    expect(parsed?.isCredit).toBe(true);
+  });
 });
+
+
 
