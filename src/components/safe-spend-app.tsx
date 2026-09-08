@@ -85,7 +85,7 @@ import {
 } from "@/lib/finance";
 import { cn } from "@/lib/utils";
 
-const SPEND_STORAGE_KEY = "safe-spend-october-v2-spend";
+const SPEND_STORAGE_KEY = "safe-spend-october-v4-spend";
 const MONTHLY_INCOME_KEY = "safe-spend-monthly-incomes-v2";
 const BUFFER_SWEEP_KEY = "safe-spend-buffer-sweeps-v1";
 const MONTHLY_CARD_BILL_KEY = "safe-spend-monthly-card-bills-v1";
@@ -127,7 +127,18 @@ function loadSpendEntries(): SpendEntry[] {
   if (typeof window === "undefined") return initialSeptemberSpends;
   try {
     const raw = window.localStorage.getItem(SPEND_STORAGE_KEY);
-    return raw && JSON.parse(raw).length > 0 ? (JSON.parse(raw) as SpendEntry[]) : initialSeptemberSpends;
+    if (!raw) return initialSeptemberSpends;
+    const parsed = JSON.parse(raw) as SpendEntry[];
+    if (!Array.isArray(parsed) || parsed.length === 0) return initialSeptemberSpends;
+
+    const existingIds = new Set(parsed.map((s) => s.id));
+    const missingSeedEntries = initialSeptemberSpends.filter((s) => !existingIds.has(s.id));
+    if (missingSeedEntries.length > 0) {
+      const merged = [...missingSeedEntries, ...parsed];
+      window.localStorage.setItem(SPEND_STORAGE_KEY, JSON.stringify(merged));
+      return merged;
+    }
+    return parsed;
   } catch {
     return initialSeptemberSpends;
   }
@@ -265,13 +276,18 @@ export function SafeSpendApp() {
 
   // Initial cloud database sync for spends and incomes
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      fetchSpendsFromDb().then((dbSpends) => {
-        if (dbSpends && dbSpends.length > 0) {
-          setEntries(dbSpends);
+    fetch("/api/spends")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data?.spends && Array.isArray(data.spends) && data.spends.length > 0) {
+          setEntries((prev) => {
+            const serverIds = new Set(data.spends.map((s: SpendEntry) => s.id));
+            const userAddedLocal = prev.filter((p) => !serverIds.has(p.id) && !p.id.startsWith("spend-sep"));
+            return [...data.spends, ...userAddedLocal];
+          });
         }
-      });
-    }
+      })
+      .catch((err) => console.error("Failed to fetch /api/spends:", err));
   }, []);
 
   useEffect(() => {
