@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useMemo, useState } from "react";
 import {
   AlertCircle,
+  ArrowDownLeft,
   ArrowUpRight,
   Bell,
   Calendar as CalendarIcon,
@@ -1609,31 +1610,44 @@ export function SafeSpendApp() {
                               const methodLabel = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
                               const matchedCard = allFactualCreditCards.find((c) => c.id === entry.cardId);
                               const rawNote = entry.note || debtCategory?.name || category?.name || "Spend";
-                              const isReimbursed = entry.isReimbursed || rawNote.toLowerCase().includes("reimbursed");
-                              
+                              const isCredit =
+                                entry.isReimbursed ||
+                                rawNote.toLowerCase().includes("reimbursed") ||
+                                rawNote.toLowerCase().includes("credit") ||
+                                rawNote.toLowerCase().includes("credited") ||
+                                rawNote.toLowerCase().includes("refund");
+
                               // Clean display title
-                              const cleanTitle = rawNote.split(" (Reimbursed")[0].trim();
+                              const cleanTitle = rawNote
+                                .replace(" [Credit Received]", "")
+                                .replace("Auto-logged: ", "")
+                                .split(" (Reimbursed")[0]
+                                .trim();
 
                               const iconObj = categoryOptions.find((c) => c.id === entry.categoryId);
-                              const IconComponent = iconObj?.icon || Wallet;
+                              const IconComponent = isCredit ? ArrowDownLeft : iconObj?.icon || Wallet;
 
                               return (
                                 <tr key={entry.id} className="hover:bg-slate-50/80 transition-all font-semibold group">
                                   <td className="py-4 px-3">
                                     <div className="flex items-center gap-3">
-                                      <div className={cn("size-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs", iconObj?.color || "bg-sky-50 text-sky-600")}>
+                                      <div className={cn("size-9 rounded-xl flex items-center justify-center shrink-0 shadow-2xs", isCredit ? "bg-emerald-50 text-emerald-600 border border-emerald-200/80" : iconObj?.color || "bg-sky-50 text-sky-600")}>
                                         <IconComponent className="size-4" />
                                       </div>
                                       <div>
                                         <div className="flex items-center gap-2">
                                           <span className="font-extrabold text-slate-900 text-sm">{cleanTitle}</span>
-                                          {isReimbursed && (
-                                            <span className="px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 bg-emerald-100/80 rounded-full shrink-0">
-                                              Reimbursed
+                                          {isCredit ? (
+                                            <span className="px-2 py-0.5 text-[10px] font-black text-emerald-700 bg-emerald-100/90 border border-emerald-200/80 rounded-full shrink-0 flex items-center gap-0.5">
+                                              <ArrowDownLeft className="size-3 text-emerald-600" /> Credit / Refund
+                                            </span>
+                                          ) : (
+                                            <span className="px-2 py-0.5 text-[10px] font-bold text-slate-500 bg-slate-100 rounded-full shrink-0">
+                                              Debit
                                             </span>
                                           )}
                                         </div>
-                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">{category?.name || "Expense"}</p>
+                                        <p className="text-[11px] text-slate-400 font-medium mt-0.5">{category?.name || (isCredit ? "Reimbursement / Refund" : "Expense")}</p>
                                       </div>
                                     </div>
                                   </td>
@@ -1650,7 +1664,9 @@ export function SafeSpendApp() {
                                   </td>
 
                                   <td className="py-4 px-3 text-right">
-                                    <span className="font-mono text-sm font-black text-slate-900">{formatInr(entry.amount)}</span>
+                                    <span className={cn("font-mono text-sm font-black", isCredit ? "text-emerald-600" : "text-slate-900")}>
+                                      {isCredit ? `+ ${formatInr(entry.amount)}` : `- ${formatInr(entry.amount)}`}
+                                    </span>
                                   </td>
 
                                   <td className="py-4 px-3 text-slate-500 font-medium text-[11px] whitespace-nowrap">
@@ -1763,8 +1779,12 @@ export function SafeSpendApp() {
                         </div>
                         <ProgressBar value={Math.min(100, (routineVariableSpent / pace.allowedByToday) * 100)} className="h-2.5" />
                         <p className="mt-2 text-[11px] font-semibold text-slate-500 flex items-center justify-between">
-                          <span>5-Day Allowed: {formatInr(pace.allowedByToday)}</span>
-                          <span className="text-emerald-600 font-extrabold">+{formatInr(Math.max(0, pace.allowedByToday - routineVariableSpent))} Buffer Left</span>
+                          <span>Day {dayOfMonth} Target ({dayOfMonth}/30 Days): {formatInr(pace.allowedByToday)}</span>
+                          {pace.allowedByToday - routineVariableSpent >= 0 ? (
+                            <span className="text-emerald-600 font-extrabold">+{formatInr(pace.allowedByToday - routineVariableSpent)} Buffer Left</span>
+                          ) : (
+                            <span className="text-rose-600 font-extrabold">-{formatInr(routineVariableSpent - pace.allowedByToday)} Over Pace</span>
+                          )}
                         </p>
                       </div>
 
