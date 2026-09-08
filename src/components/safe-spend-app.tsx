@@ -78,6 +78,7 @@ import {
   generateMonthPreviews,
   initialSeptemberSpends,
   octoberSeedData,
+  sortSpendsNewestFirst,
   sumAmounts,
   CustomDebt,
   IncomeSource,
@@ -124,23 +125,23 @@ const categoryOptions = [
 ];
 
 function loadSpendEntries(): SpendEntry[] {
-  if (typeof window === "undefined") return initialSeptemberSpends;
+  if (typeof window === "undefined") return sortSpendsNewestFirst(initialSeptemberSpends);
   try {
     const raw = window.localStorage.getItem(SPEND_STORAGE_KEY);
-    if (!raw) return initialSeptemberSpends;
+    if (!raw) return sortSpendsNewestFirst(initialSeptemberSpends);
     const parsed = JSON.parse(raw) as SpendEntry[];
-    if (!Array.isArray(parsed) || parsed.length === 0) return initialSeptemberSpends;
+    if (!Array.isArray(parsed) || parsed.length === 0) return sortSpendsNewestFirst(initialSeptemberSpends);
 
     const existingIds = new Set(parsed.map((s) => s.id));
     const missingSeedEntries = initialSeptemberSpends.filter((s) => !existingIds.has(s.id));
     if (missingSeedEntries.length > 0) {
-      const merged = [...missingSeedEntries, ...parsed];
+      const merged = sortSpendsNewestFirst([...missingSeedEntries, ...parsed]);
       window.localStorage.setItem(SPEND_STORAGE_KEY, JSON.stringify(merged));
       return merged;
     }
-    return parsed;
+    return sortSpendsNewestFirst(parsed);
   } catch {
-    return initialSeptemberSpends;
+    return sortSpendsNewestFirst(initialSeptemberSpends);
   }
 }
 
@@ -284,7 +285,7 @@ export function SafeSpendApp() {
             setEntries((prev) => {
               const serverIds = new Set(data.spends.map((s: SpendEntry) => s.id));
               const userAddedLocal = prev.filter((p) => !serverIds.has(p.id) && !p.id.startsWith("spend-sep"));
-              return [...data.spends, ...userAddedLocal];
+              return sortSpendsNewestFirst([...data.spends, ...userAddedLocal]);
             });
           }
         })
@@ -674,7 +675,7 @@ export function SafeSpendApp() {
       );
     }
 
-    return list;
+    return sortSpendsNewestFirst(list);
   }, [entries, spendListFilter, searchQuery]);
 
   function startEditingIncome(source: IncomeSource) {

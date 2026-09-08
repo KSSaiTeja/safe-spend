@@ -264,6 +264,24 @@ export const initialSeptemberSpends: SpendEntry[] = [
   { id: "spend-sep1-water", date: "2026-09-01", amount: 10, categoryId: "groceries", paidBy: "cash", note: "Water tin" },
 ];
 
+export function sortSpendsNewestFirst(spends: SpendEntry[]): SpendEntry[] {
+  return [...spends].sort((a, b) => {
+    if (a.date !== b.date) {
+      return b.date.localeCompare(a.date);
+    }
+    if (a.id.startsWith("auto-") && b.id.startsWith("auto-")) {
+      const timeA = Number(a.id.split("-")[1]) || 0;
+      const timeB = Number(b.id.split("-")[1]) || 0;
+      if (timeA !== timeB) return timeB - timeA;
+    } else if (a.id.startsWith("auto-")) {
+      return -1;
+    } else if (b.id.startsWith("auto-")) {
+      return 1;
+    }
+    return b.id.localeCompare(a.id);
+  });
+}
+
 export type FactualBankCardGroup = {
   bankName: string;
   sharedLimit: number;
