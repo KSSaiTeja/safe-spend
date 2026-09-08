@@ -245,6 +245,13 @@ export const octoberSeedData: MonthlyBudgetData = {
 };
 
 export const initialSeptemberSpends: SpendEntry[] = [
+  { id: "spend-sep8-chelli-jewellery", date: "2026-09-08", amount: 650, categoryId: "misc", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Chelli jewellery" },
+  { id: "spend-sep8-chicken", date: "2026-09-08", amount: 370, categoryId: "groceries", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Chicken" },
+  { id: "spend-sep8-eggs", date: "2026-09-08", amount: 240, categoryId: "groceries", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "36 eggs" },
+  { id: "spend-sep8-internet", date: "2026-09-08", amount: 1000, categoryId: "electricity", paidBy: "upi", note: "Internet bill" },
+  { id: "spend-sep8-bikewash", date: "2026-09-08", amount: 100, categoryId: "misc", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Bike wash" },
+  { id: "spend-sep8-recharge", date: "2026-09-08", amount: 180, categoryId: "misc", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Chelli recharge" },
+  { id: "spend-sep5-movie", date: "2026-09-05", amount: 300, categoryId: "misc", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Movie ticket" },
   { id: "spend-sep5-envato", date: "2026-09-05", amount: 300, categoryId: "misc", paidBy: "upi", note: "Envato transfer" },
   { id: "spend-sep5-shampoo", date: "2026-09-05", amount: 312, categoryId: "groceries", paidBy: "axis", cardId: "axis-flipkart", note: "Flipkart Minutes - Sister shampoo" },
   { id: "spend-sep4-powerbill", date: "2026-09-04", amount: 1349, categoryId: "electricity", paidBy: "hdfc", cardId: "hdfc-phonepe", note: "Electricity power bill" },
