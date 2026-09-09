@@ -108,7 +108,20 @@ describe("Bank SMS Auto-Parsing", () => {
     expect(parsed?.amount).toBe(1500);
     expect(parsed?.isCredit).toBe(true);
   });
+
+  it("correctly parses Axis Bank multiline SMS alerts", async () => {
+    const { parseBankSms } = await import("../app/api/spends/auto-log/route");
+    const axisSms = `Spent INR 1017\nAxis Bank Card no. XX9691\n09-09-26 08:33:40 IST\nFLIPKART PA\nAvl Limit: INR 417.24\nNot you? SMS BLOCK 9691 to 919951860002`;
+    const parsed = parseBankSms(axisSms);
+    expect(parsed).not.toBeNull();
+    expect(parsed?.amount).toBe(1017);
+    expect(parsed?.paidBy).toBe("axis");
+    expect(parsed?.cardId).toBe("axis-flipkart");
+    expect(parsed?.payee).toBe("FLIPKART PA");
+    expect(parsed?.categoryId).toBe("groceries");
+  });
 });
+
 
 
 

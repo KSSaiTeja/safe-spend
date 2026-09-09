@@ -15,7 +15,7 @@ export type AutoParsedSpend = {
 
 /**
  * Parses Indian Bank SMS / Notification text for automated spend AND credit logging.
- * Robustly parses HDFC, Axis, YES Bank, Uni, SBI, ICICI, PhonePe, Paytm, GPay, etc.
+ * Robustly parses Axis Bank, HDFC, YES Bank, Uni, SBI, ICICI, PhonePe, Paytm, GPay, etc.
  */
 export function parseBankSms(text: string): AutoParsedSpend | null {
   if (!text || typeof text !== "string") return null;
@@ -44,9 +44,9 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
 
   if (!isCredit && !isDebit) return null;
 
-  // 1. Extract Amount (e.g. "Rs 250.00", "INR 1,500", "debited by 450", "Spent Rs.370", "credited with 1000")
+  // 1. Extract Amount (e.g. "Spent INR 1017", "Rs 250.00", "INR 1,500", "debited by 450")
   const amountMatch =
-    text.match(/(?:rs\.?|inr|debited by|credited with|credited|spent|paid|vpa|amt|amount)\s*[:\s]*([0-9,]+(?:\.[0-9]{1,2})?)/i) ||
+    text.match(/(?:spent|debited by|credited with|credited|paid|vpa|amt|amount|inr|rs\.?)\s*[:\s]*([0-9,]+(?:\.[0-9]{1,2})?)/i) ||
     text.match(/([0-9,]+(?:\.[0-9]{1,2})?)\s*(?:debited|credited|spent|paid|received)/i);
 
   if (!amountMatch) return null;
@@ -54,19 +54,70 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
   const amount = Math.round(Number(rawAmountStr));
   if (!Number.isFinite(amount) || amount <= 0) return null;
 
-  // 2. Extract Payee / Sender
+  // 2. Extract Payee / Vendor (handles inline "at/to/from/vpa" AND multiline Axis/HDFC formats)
   let payee = isCredit ? "Credit / Refund Received" : "Bank Transaction";
   const payeeMatch =
-    text.match(/(?:to|at|from|vpa|info|vendor|trf to|by)\s+([A-Za-z0-9\s._-]+?)(?:\s+via|\s+on|\s+ref|\s+avail|\s+card|\.|\$|$)/i);
-  if (payeeMatch && payeeMatch[1].trim()) {
+    text.match(/(?:to|at|from|vpa|info|vendor|trf to)\s+([A-Za-z][A-Za-z0-9\s._-]{2,})/i);
+
+  if (payeeMatch && payeeMatch[1].trim() && !payeeMatch[1].toLowerCase().includes("bank transaction") && !/^\d+$/.test(payeeMatch[1].trim())) {
     payee = payeeMatch[1].trim();
+  } else {
+    // Multiline fallback (e.g. Axis Bank SMS format where payee is on its own line like "FLIPKART PA")
+    const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+    for (const line of lines) {
+      const lineLower = line.toLowerCase();
+      if (
+        !lineLower.includes("spent") &&
+        !lineLower.includes("debited") &&
+        !lineLower.includes("credited") &&
+        !lineLower.includes("bank") &&
+        !lineLower.includes("card no") &&
+        !lineLower.includes("avl limit") &&
+        !lineLower.includes("limit:") &&
+        !lineLower.includes("not you") &&
+        !lineLower.includes("sms block") &&
+        !lineLower.includes("block") &&
+        !lineLower.includes("ist") &&
+        !/\d{4,}/.test(line) &&
+        !/^[0-9:\-\s\/]+$/.test(line) &&
+        line.length >= 3
+      ) {
+        payee = line;
+        break;
+      }
+    }
   }
 
-  // 3. Determine Payment Method & Card ID
+  // 3. Determine Payment Method & Precise Card ID using last-4 digits or bank keywords
   let paidBy: "upi" | "cash" | "hdfc" | "axis" | "yes-bank" = "upi";
   let cardId: string | undefined = undefined;
 
-  if (lower.includes("hdfc")) {
+  // Check card last 4 digits matching
+  if (lower.includes("9691")) {
+    paidBy = "axis";
+    cardId = "axis-flipkart";
+  } else if (lower.includes("7380")) {
+    paidBy = "axis";
+    cardId = "axis-indianoil";
+  } else if (lower.includes("6415")) {
+    paidBy = "axis";
+    cardId = "axis-myzone";
+  } else if (lower.includes("8020")) {
+    paidBy = "hdfc";
+    cardId = "hdfc-phonepe";
+  } else if (lower.includes("7192")) {
+    paidBy = "hdfc";
+    cardId = "hdfc-tataneu";
+  } else if (lower.includes("6666")) {
+    paidBy = "hdfc";
+    cardId = "hdfc-rupay";
+  } else if (lower.includes("0976")) {
+    paidBy = "yes-bank";
+    cardId = "yes-uni-gold";
+  } else if (lower.includes("5456")) {
+    paidBy = "yes-bank";
+    cardId = "yes-uni-rupay";
+  } else if (lower.includes("hdfc")) {
     paidBy = "hdfc";
     cardId = "hdfc-phonepe";
   } else if (lower.includes("axis")) {
@@ -84,6 +135,7 @@ export function parseBankSms(text: string): AutoParsedSpend | null {
   const searchSpace = `${payee} ${text}`.toLowerCase();
 
   if (
+    searchSpace.includes("flipkart") ||
     searchSpace.includes("zomato") ||
     searchSpace.includes("swiggy") ||
     searchSpace.includes("blinkit") ||
@@ -213,7 +265,7 @@ export async function GET() {
     endpoint: "/api/spends/auto-log",
     description: "SafeSpend Live Webhook for iPhone Shortcuts & Bank Transaction Auto-Logging (Debits & Credits)",
     samplePayload: {
-      message: "Rs 500.00 credited to A/C ...8020 on 08-SEP-26 from CLIENT via UPI",
+      message: "Spent INR 1017\nAxis Bank Card no. XX9691\n09-09-26 08:33:40 IST\nFLIPKART PA\nAvl Limit: INR 417.24",
     },
   });
 }
