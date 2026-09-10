@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import {
   AlertCircle,
   ArrowDownLeft,
@@ -55,16 +55,6 @@ import {
   ProgressBar,
   Switch,
 } from "@heroui/react";
-
-import {
-  deleteIncomeFromDb,
-  deleteSpendFromDb,
-  fetchIncomesFromDb,
-  fetchSpendsFromDb,
-  isSupabaseConfigured,
-  saveIncomeToDb,
-  saveSpendToDb,
-} from "@/lib/db";
 import {
   addMonthsToDate,
   calculateMonthlyPlan,
@@ -238,6 +228,7 @@ export function SafeSpendApp() {
   const [note, setNote] = useState("");
   const [spendDate, setSpendDate] = useState<string>(() => getLocalDateString());
   const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
+  const pendingSpendUpdates = useRef<Map<string, SpendEntry>>(new Map());
 
   // Custom UI Popover / Modal states
   const [showCalendarPopover, setShowCalendarPopover] = useState(false);
@@ -285,8 +276,12 @@ export function SafeSpendApp() {
           if (data?.spends && Array.isArray(data.spends) && data.spends.length > 0) {
             setEntries((prev) => {
               const serverIds = new Set(data.spends.map((s: SpendEntry) => s.id));
-              const userAddedLocal = prev.filter((p) => !serverIds.has(p.id) && !p.id.startsWith("spend-sep"));
-              return sortSpendsNewestFirst([...data.spends, ...userAddedLocal]);
+              const userAddedLocal = prev.filter((p) => !serverIds.has(p.id));
+              const mergedServerSpends = data.spends.map((s: SpendEntry) => {
+                const pending = pendingSpendUpdates.current.get(s.id);
+                return pending || s;
+              });
+              return sortSpendsNewestFirst([...mergedServerSpends, ...userAddedLocal]);
             });
           }
         })
@@ -306,16 +301,28 @@ export function SafeSpendApp() {
   }, []);
 
   useEffect(() => {
-    if (isSupabaseConfigured) {
-      fetchIncomesFromDb(selectedMonth).then((dbIncomes) => {
-        if (dbIncomes && dbIncomes.length > 0) {
-          setMonthlyIncomes((prev) => ({
-            ...prev,
-            [selectedMonth]: dbIncomes,
-          }));
-        }
-      });
-    }
+    const syncIncomes = () => {
+      fetch(`/api/incomes?month=${encodeURIComponent(selectedMonth)}`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.incomes && Array.isArray(data.incomes) && data.incomes.length > 0) {
+            setMonthlyIncomes((prev) => ({
+              ...prev,
+              [selectedMonth]: data.incomes,
+            }));
+          }
+        })
+        .catch((err) => console.error("Failed to fetch /api/incomes:", err));
+    };
+
+    syncIncomes();
+    const interval = setInterval(syncIncomes, 6000);
+    window.addEventListener("focus", syncIncomes);
+
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("focus", syncIncomes);
+    };
   }, [selectedMonth]);
 
   // Dynamically auto-assign default card when switching payment method to a card
@@ -706,7 +713,11 @@ export function SafeSpendApp() {
         const updated = list.map((item) => (item.id === editingIncomeId ? updatedSource : item));
         return { ...prev, [selectedMonth]: updated };
       });
-      saveIncomeToDb(updatedSource, selectedMonth);
+      fetch("/api/incomes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ income: updatedSource, month: selectedMonth }),
+      }).catch((err) => console.error("Failed to save income to server:", err));
       setEditingIncomeId(null);
     } else {
       const newSource: IncomeSource = {
@@ -721,7 +732,11 @@ export function SafeSpendApp() {
         ...prev,
         [selectedMonth]: [...(prev[selectedMonth] ?? currentIncomes), newSource],
       }));
-      saveIncomeToDb(newSource, selectedMonth);
+      fetch("/api/incomes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ income: newSource, month: selectedMonth }),
+      }).catch((err) => console.error("Failed to save income to server:", err));
     }
 
     setNewIncomeName("");
@@ -739,7 +754,11 @@ export function SafeSpendApp() {
             ...item,
             status: item.status === "received" ? "expected" : "received",
           };
-          saveIncomeToDb(nextItem, selectedMonth);
+          fetch("/api/incomes", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ income: nextItem, month: selectedMonth }),
+          }).catch((err) => console.error("Failed to save income status to server:", err));
           return nextItem;
         }
         return item;
@@ -753,7 +772,9 @@ export function SafeSpendApp() {
       const list = prev[selectedMonth] ?? currentIncomes;
       return { ...prev, [selectedMonth]: list.filter((item) => item.id !== sourceId) };
     });
-    deleteIncomeFromDb(sourceId);
+    fetch(`/api/incomes?id=${encodeURIComponent(sourceId)}`, { method: "DELETE" }).catch((err) =>
+      console.error("Failed to delete income from server DB:", err),
+    );
   }
 
   function startEditingEntry(entry: SpendEntry) {
@@ -768,6 +789,7 @@ export function SafeSpendApp() {
   }
 
   function deleteSpendEntry(entryId: string) {
+    pendingSpendUpdates.current.delete(entryId);
     setEntries((prev) => prev.filter((e) => e.id !== entryId));
     fetch(`/api/spends?id=${encodeURIComponent(entryId)}`, { method: "DELETE" }).catch((err) =>
       console.error("Failed to delete spend from server DB:", err),
@@ -794,12 +816,25 @@ export function SafeSpendApp() {
         cardId: isCreditCardPayment ? selectedCardId : undefined,
         note: note.trim() || undefined,
       };
+      pendingSpendUpdates.current.set(updatedEntry.id, updatedEntry);
       setEntries((current) =>
         current.map((item) => (item.id === editingEntryId ? updatedEntry : item)),
       );
-      if (isSupabaseConfigured) {
-        saveSpendToDb(updatedEntry);
-      }
+      fetch("/api/spends", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spend: updatedEntry }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.spend) {
+            pendingSpendUpdates.current.delete(updatedEntry.id);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to update spend on server:", err);
+          pendingSpendUpdates.current.delete(updatedEntry.id);
+        });
       setEditingEntryId(null);
     } else {
       const entry: SpendEntry = {
@@ -811,10 +846,23 @@ export function SafeSpendApp() {
         cardId: isCreditCardPayment ? selectedCardId : undefined,
         note: note.trim() || undefined,
       };
+      pendingSpendUpdates.current.set(entry.id, entry);
       setEntries((current) => [entry, ...current]);
-      if (isSupabaseConfigured) {
-        saveSpendToDb(entry);
-      }
+      fetch("/api/spends", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ spend: entry }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          if (data?.spend) {
+            pendingSpendUpdates.current.delete(entry.id);
+          }
+        })
+        .catch((err) => {
+          console.error("Failed to save spend on server:", err);
+          pendingSpendUpdates.current.delete(entry.id);
+        });
     }
 
     setAmount("");
@@ -1382,6 +1430,65 @@ export function SafeSpendApp() {
           {/* TAB 1: SPEND TRACKER (DEFAULT VIEW #1) */}
           {activeTab === "spend" && (
             <div className="space-y-6">
+              {/* HIGH VISIBILITY LIVING BUDGET SHORTAGE & DAILY SAFE LIMIT BANNER */}
+              <div className="rounded-3xl bg-gradient-to-r from-amber-500 via-orange-500 to-[#D96653] text-white p-5 sm:p-6 shadow-md space-y-4">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-white/20 pb-3">
+                  <div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[10px] font-black tracking-wider uppercase backdrop-blur-xs">
+                      <AlertCircle className="size-3 text-amber-200" /> Living Budget Shortage Alert
+                    </span>
+                    <h3 className="text-xl sm:text-2xl font-black tracking-tight mt-1.5 text-white">
+                      Recommended Daily Limit: {formatInr(Math.floor(Math.max(0, 18000 - (entries.reduce((sum, e) => {
+                        const isCredit = e.isReimbursed || e.note?.toLowerCase().includes("reimbursed") || e.note?.toLowerCase().includes("credit");
+                        return sum + (isCredit ? -e.amount : e.amount);
+                      }, 0))) / Math.max(1, 30 - dayOfMonth)))} <span className="text-sm font-semibold text-orange-100">/ day</span>
+                    </h3>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-[10px] uppercase font-extrabold text-orange-100">Remaining Days in Sep</p>
+                    <p className="font-mono text-lg sm:text-xl font-black text-white">{Math.max(1, 30 - dayOfMonth)} Days Left</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-xs p-3 space-y-0.5">
+                    <p className="text-[10px] uppercase font-extrabold text-orange-100">Total September Living Budget</p>
+                    <p className="font-mono text-base font-black text-white">₹18,000</p>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-xs p-3 space-y-0.5">
+                    <p className="text-[10px] uppercase font-extrabold text-orange-100">Net Spent Across 24 Txns</p>
+                    <p className="font-mono text-base font-black text-orange-100">
+                      {formatInr(entries.reduce((sum, e) => {
+                        const isCredit = e.isReimbursed || e.note?.toLowerCase().includes("reimbursed") || e.note?.toLowerCase().includes("credit");
+                        return sum + (isCredit ? -e.amount : e.amount);
+                      }, 0))}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-xs p-3 space-y-0.5">
+                    <p className="text-[10px] uppercase font-extrabold text-orange-100">Remaining Budget Cash</p>
+                    <p className="font-mono text-base font-black text-white">
+                      {formatInr(Math.max(0, 18000 - entries.reduce((sum, e) => {
+                        const isCredit = e.isReimbursed || e.note?.toLowerCase().includes("reimbursed") || e.note?.toLowerCase().includes("credit");
+                        return sum + (isCredit ? -e.amount : e.amount);
+                      }, 0)))}
+                    </p>
+                  </div>
+                  <div className="rounded-2xl bg-white/15 backdrop-blur-xs p-3 space-y-0.5">
+                    <p className="text-[10px] uppercase font-extrabold text-orange-100">Max Daily Living Cap</p>
+                    <p className="font-mono text-base font-black text-emerald-200">
+                      ≤ {formatInr(Math.floor(Math.max(0, 18000 - entries.reduce((sum, e) => {
+                        const isCredit = e.isReimbursed || e.note?.toLowerCase().includes("reimbursed") || e.note?.toLowerCase().includes("credit");
+                        return sum + (isCredit ? -e.amount : e.amount);
+                      }, 0)) / Math.max(1, 30 - dayOfMonth)))} / day
+                    </p>
+                  </div>
+                </div>
+
+                <div className="text-[11px] font-medium text-orange-100/90 pt-1 border-t border-white/20 flex items-center justify-between">
+                  <span>💡 <strong>Shortage Strategy:</strong> Keep daily spending under <strong>₹180 / day</strong> for the next {Math.max(1, 30 - dayOfMonth)} days. ₹4,616 of your spent amount was charged to credit cards, giving your bank account instant cash breathing room for rent.</span>
+                </div>
+              </div>
+
               {/* Top 4 Finexy Metric Cards Grid */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Featured Coral Card: Total Monthly Income (With Add Income Option) */}
@@ -1604,7 +1711,7 @@ export function SafeSpendApp() {
                               </td>
                             </tr>
                           ) : (
-                            filteredEntries.slice(0, 15).map((entry) => {
+                            filteredEntries.map((entry) => {
                               const category = octoberSeedData.expenses.find((item) => item.id === entry.categoryId);
                               const debtCategory = debtPaymentStats.find((item) => item.id === entry.categoryId);
                               const methodLabel = paymentMethods.find((item) => item.id === entry.paidBy)?.label;
@@ -1793,12 +1900,12 @@ export function SafeSpendApp() {
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
                           <p className="text-slate-500 font-bold text-[11px]">Pace for Next {Math.max(1, 30 - dayOfMonth)} Days</p>
                           <p className="mt-1 font-mono text-base font-black text-slate-900">
-                            {formatInr(Math.floor(Math.max(0, variableBudget - variableSpent) / Math.max(1, 30 - dayOfMonth)))} <span className="text-xs font-medium text-slate-400">/day</span>
+                            {formatInr(Math.floor(Math.max(0, variableBudget - routineVariableSpent) / Math.max(1, 30 - dayOfMonth)))} <span className="text-xs font-medium text-slate-400">/day</span>
                           </p>
                         </div>
                         <div className="rounded-2xl bg-slate-50 border border-slate-200/80 p-3">
                           <p className="text-slate-500 font-bold text-[11px]">Remaining in ₹9k Pool</p>
-                          <p className="mt-1 font-mono text-base font-black text-emerald-600">{formatInr(Math.max(0, variableBudget - variableSpent))}</p>
+                          <p className="mt-1 font-mono text-base font-black text-emerald-600">{formatInr(Math.max(0, variableBudget - routineVariableSpent))}</p>
                         </div>
                       </div>
                     </div>

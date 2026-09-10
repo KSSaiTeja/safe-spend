@@ -160,7 +160,7 @@ export const octoberSeedData: MonthlyBudgetData = {
     {
       id: "salary",
       name: "Zenerative Minds salary",
-      amount: 60000,
+      amount: 59800,
       expectedDate: "Sep 2 EOD",
       status: "expected",
     },
@@ -174,14 +174,14 @@ export const octoberSeedData: MonthlyBudgetData = {
     {
       id: "vridanta",
       name: "Vridanta",
-      amount: 33000,
+      amount: 36900,
       expectedDate: "Mid September",
       status: "expected",
     },
     {
       id: "guiderhub",
       name: "Guiderhub",
-      amount: 20000,
+      amount: 30000,
       expectedDate: "Mid September",
       status: "expected",
     },

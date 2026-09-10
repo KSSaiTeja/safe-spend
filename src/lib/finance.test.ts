@@ -12,17 +12,17 @@ describe("October Safe Spend logic", () => {
   it("keeps Daddy fully reserved and recommends a Venkat payment with a ₹5k buffer", () => {
     const plan = calculateMonthlyPlan(octoberSeedData);
 
-    expect(plan.totalIncome).toBe(149000);
+    expect(plan.totalIncome).toBe(162700);
     expect(plan.personalEmisTotal).toBe(13974);
     expect(plan.venkatPayableEmisTotal).toBe(15750);
     expect(plan.outgoingEmisTotal).toBe(29724);
     expect(plan.ownEmisTotal).toBe(29724);
     expect(plan.nonEmiExpensesTotal).toBe(18000);
     expect(plan.coreObligationsBeforeVenkat).toBe(100311);
-    expect(plan.maxVenkatPaymentWithoutBuffer).toBe(48689);
-    expect(plan.recommendedVenkatPayment).toBe(43689);
-    expect(plan.deferredVenkatBalance).toBe(6311);
-    expect(plan.finalBufferAfterRecommendedPlan).toBe(5000);
+    expect(plan.maxVenkatPaymentWithoutBuffer).toBe(62389);
+    expect(plan.recommendedVenkatPayment).toBe(50000);
+    expect(plan.deferredVenkatBalance).toBe(0);
+    expect(plan.finalBufferAfterRecommendedPlan).toBe(12389);
   });
 
   it("sets variable spending to ₹9k, or ₹300 per day for a 30-day month", () => {
@@ -119,6 +119,38 @@ describe("Bank SMS Auto-Parsing", () => {
     expect(parsed?.cardId).toBe("axis-flipkart");
     expect(parsed?.payee).toBe("FLIPKART PA");
     expect(parsed?.categoryId).toBe("groceries");
+  });
+});
+
+describe("Transactions & Seed Data Integrity", () => {
+  it("contains 17 initial September spend entries spanning Sep 1 to Sep 8", async () => {
+    const { initialSeptemberSpends, sortSpendsNewestFirst } = await import("./finance");
+    expect(initialSeptemberSpends.length).toBe(17);
+    const sorted = sortSpendsNewestFirst(initialSeptemberSpends);
+    expect(sorted[0].date).toBe("2026-09-08");
+    expect(sorted[sorted.length - 1].date).toBe("2026-09-01");
+  });
+
+  it("handles POST requests to /api/spends to update/create transactions", async () => {
+    const { POST } = await import("../app/api/spends/route");
+    const testSpend = {
+      id: "test-spend-edit-1",
+      date: "2026-09-08",
+      amount: 450,
+      categoryId: "groceries",
+      paidBy: "upi" as const,
+      note: "Updated groceries amount",
+    };
+    const req = new Request("http://localhost/api/spends", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ spend: testSpend }),
+    });
+    const res = await POST(req);
+    expect(res.status).toBe(200);
+    const data = await res.json();
+    expect(data.spend.id).toBe("test-spend-edit-1");
+    expect(data.spend.amount).toBe(450);
   });
 });
 
